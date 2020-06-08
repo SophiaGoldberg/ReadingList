@@ -123,6 +123,8 @@ class LaunchManager {
         #if DEBUG
         Debug.initialiseData()
         #endif
+        DefaultDataManager().createWishListIfNeeded(viewContext: PersistentStoreManager.container.viewContext)
+        
         window.rootViewController = TabBarController()
 
         // Initialise app-level theme, and monitor the set theme, if on iOS >13

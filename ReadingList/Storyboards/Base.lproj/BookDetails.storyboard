@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14868" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="n9u-1T-KRj">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="n9u-1T-KRj">
     <device id="retina5_5" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14824"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="16087"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -16,13 +16,13 @@
                         <rect key="frame" x="0.0" y="0.0" width="414" height="736"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="bTb-kP-Eva">
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bTb-kP-Eva">
                                 <rect key="frame" x="0.0" y="0.0" width="414" height="736"/>
                                 <subviews>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qHr-le-Bwg" userLabel="Content View">
+                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qHr-le-Bwg" userLabel="Content View">
                                         <rect key="frame" x="0.0" y="0.0" width="414" height="1076.3333333333333"/>
                                         <subviews>
-                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="bhg-kb-dQx" userLabel="Main Stack View">
+                                            <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="bhg-kb-dQx" userLabel="Main Stack View">
                                                 <rect key="frame" x="18" y="18" width="378" height="1040.3333333333333"/>
                                                 <subviews>
                                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="yhn-N0-bz4" userLabel="CoverAndTitle">
@@ -79,8 +79,16 @@
                                                                     <action selector="changeReadStateButtonWasPressed:" destination="7uR-tE-cQd" eventType="touchUpInside" id="sM9-H4-GmT"/>
                                                                 </connections>
                                                             </button>
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="UY5-nB-lYr">
+                                                                <rect key="frame" x="92" y="83.333333333333329" width="112" height="30"/>
+                                                                <state key="normal" title="Add to Wish List"/>
+                                                                <connections>
+                                                                    <action selector="addToWishList:" destination="7uR-tE-cQd" eventType="touchUpInside" id="RKa-Hk-8ki"/>
+                                                                </connections>
+                                                            </button>
                                                         </subviews>
                                                         <constraints>
+                                                            <constraint firstItem="UY5-nB-lYr" firstAttribute="leading" secondItem="xYF-nW-8G6" secondAttribute="leading" id="1Nh-3O-raf"/>
                                                             <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="xYF-nW-8G6" secondAttribute="trailing" id="5Kf-UD-J7i"/>
                                                             <constraint firstItem="Idg-j1-qMK" firstAttribute="top" secondItem="yhn-N0-bz4" secondAttribute="top" id="Xr2-gy-4Zn"/>
                                                             <constraint firstAttribute="bottom" secondItem="3DD-HK-Aea" secondAttribute="bottom" priority="999" id="aS8-A4-d2d"/>
@@ -90,6 +98,7 @@
                                                             <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="xYF-nW-8G6" secondAttribute="bottom" id="hre-e9-GGp"/>
                                                             <constraint firstItem="xYF-nW-8G6" firstAttribute="top" secondItem="Idg-j1-qMK" secondAttribute="bottom" constant="12" id="nzg-ry-BCv"/>
                                                             <constraint firstAttribute="trailing" secondItem="Idg-j1-qMK" secondAttribute="trailing" id="smK-18-UQc"/>
+                                                            <constraint firstItem="UY5-nB-lYr" firstAttribute="top" secondItem="xYF-nW-8G6" secondAttribute="bottom" constant="4" id="sry-zq-KOD"/>
                                                             <constraint firstItem="Idg-j1-qMK" firstAttribute="leading" secondItem="3DD-HK-Aea" secondAttribute="trailing" constant="12" id="ulX-0b-jJu">
                                                                 <variation key="heightClass=regular-widthClass=regular" constant="20"/>
                                                             </constraint>
@@ -102,7 +111,7 @@
                                                             <constraint firstAttribute="height" constant="1" id="ngb-Bt-YD4" customClass="HairlineConstraint" customModule="ReadingList_Foundation"/>
                                                         </constraints>
                                                     </view>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="G5L-nH-fCB" customClass="ExpandableLabel" customModule="ReadingList_Foundation">
+                                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="G5L-nH-fCB" customClass="ExpandableLabel" customModule="ReadingList_Foundation">
                                                         <rect key="frame" x="0.0" y="145" width="378" height="81.333333333333314"/>
                                                         <userDefinedRuntimeAttributes>
                                                             <userDefinedRuntimeAttribute type="string" keyPath="text">
@@ -119,14 +128,14 @@
                                                             </userDefinedRuntimeAttribute>
                                                         </userDefinedRuntimeAttributes>
                                                     </view>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VZx-ih-0hi" userLabel="Separator">
+                                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VZx-ih-0hi" userLabel="Separator">
                                                         <rect key="frame" x="0.0" y="238.33333333333331" width="378" height="1"/>
                                                         <color key="backgroundColor" systemColor="separatorColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.28999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
                                                         <constraints>
                                                             <constraint firstAttribute="height" constant="1" id="YQZ-Es-BVd" customClass="HairlineConstraint" customModule="ReadingList_Foundation"/>
                                                         </constraints>
                                                     </view>
-                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="dK7-Qi-TIg">
+                                                    <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="dK7-Qi-TIg">
                                                         <rect key="frame" x="0.0" y="251.33333333333331" width="378" height="146"/>
                                                         <subviews>
                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="KgY-4c-9LI" userLabel="ReadingLogTitle">
@@ -366,14 +375,14 @@
                                                             </view>
                                                         </subviews>
                                                     </stackView>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ldU-QI-O4q" userLabel="Separator">
+                                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ldU-QI-O4q" userLabel="Separator">
                                                         <rect key="frame" x="0.0" y="409.33333333333331" width="378" height="1"/>
                                                         <color key="backgroundColor" systemColor="separatorColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.28999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
                                                         <constraints>
                                                             <constraint firstAttribute="height" constant="1" id="BtD-V8-1bx" customClass="HairlineConstraint" customModule="ReadingList_Foundation"/>
                                                         </constraints>
                                                     </view>
-                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="bza-Z5-QWk">
+                                                    <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="bza-Z5-QWk">
                                                         <rect key="frame" x="0.0" y="422.33333333333326" width="378" height="210"/>
                                                         <subviews>
                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="7hf-Cy-beu" userLabel="OrganiseTitle">
@@ -685,14 +694,14 @@
                                                             </view>
                                                         </subviews>
                                                     </stackView>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Vo9-bZ-62H" userLabel="Separator">
+                                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Vo9-bZ-62H" userLabel="Separator">
                                                         <rect key="frame" x="0.0" y="644.33333333333337" width="378" height="1"/>
                                                         <color key="backgroundColor" systemColor="separatorColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.28999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
                                                         <constraints>
                                                             <constraint firstAttribute="height" constant="1" id="ZtI-Rq-Ofe" customClass="HairlineConstraint" customModule="ReadingList_Foundation"/>
                                                         </constraints>
                                                     </view>
-                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="FwS-uy-jCu">
+                                                    <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="FwS-uy-jCu">
                                                         <rect key="frame" x="0.0" y="657.33333333333337" width="378" height="139"/>
                                                         <subviews>
                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="xlI-AY-8l2" userLabel="NotesTItle">
@@ -802,14 +811,14 @@
                                                             </label>
                                                         </subviews>
                                                     </stackView>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="R8c-m8-a9Z" userLabel="Separator">
+                                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="R8c-m8-a9Z" userLabel="Separator">
                                                         <rect key="frame" x="0.0" y="808.33333333333337" width="378" height="1"/>
                                                         <color key="backgroundColor" systemColor="separatorColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.28999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
                                                         <constraints>
                                                             <constraint firstAttribute="height" constant="1" id="Ibg-wa-qDP" customClass="HairlineConstraint" customModule="ReadingList_Foundation"/>
                                                         </constraints>
                                                     </view>
-                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="2Jl-qN-QRH">
+                                                    <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="2Jl-qN-QRH">
                                                         <rect key="frame" x="0.0" y="821.33333333333337" width="378" height="219.00000000000011"/>
                                                         <subviews>
                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="vmf-Me-0Kl" userLabel="OrganiseTitle">
@@ -948,6 +957,7 @@
                     </navigationItem>
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="addToWishList" destination="UY5-nB-lYr" id="h1c-6f-5rk"/>
                         <outlet property="amazon" destination="kFh-Vj-XIY" id="bjc-vs-P9G"/>
                         <outlet property="bookDescription" destination="G5L-nH-fCB" id="Q0p-9Z-1Ob"/>
                         <outlet property="bookNotes" destination="LBd-iO-KX0" id="eb9-6L-Giw"/>

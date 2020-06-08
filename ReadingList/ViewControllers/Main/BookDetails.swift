@@ -26,6 +26,7 @@ final class BookDetails: UIViewController, UIScrollViewDelegate { //swiftlint:di
     @IBOutlet private weak var noNotes: UILabel!
     @IBOutlet private weak var bookNotes: ExpandableLabel!
     @IBOutlet private weak var ratingView: CosmosView!
+    @IBOutlet private weak var addToWishList: UIButton!
 
     var didShowNavigationItemTitle = false
 
@@ -158,6 +159,25 @@ final class BookDetails: UIViewController, UIScrollViewDelegate { //swiftlint:di
         // There is a placeholder view for the case of no lists. Lists are stored in 3 nested stack views
         noLists.isHidden = !book.lists.isEmpty
         listsStack.superview!.superview!.superview!.isHidden = book.lists.isEmpty
+        
+        let inWishList = book.lists.contains(where: {$0.isStockList(.wishList)})
+        if inWishList {
+            addToWishList.setTitle("Remove from Wish List", for: .normal)
+        } else {
+            addToWishList.setTitle("Add to Wish List", for: .normal)
+        }
+    }
+
+    @IBAction func addToWishList(_ sender: UIButton) {
+        let childContext = PersistentStoreManager.container.viewContext.childContext()
+        let wishList = List.getStockList(.wishList, in: childContext)
+        guard let book = book?.inContext(childContext) else { return }
+        if wishList.books.contains(book) {
+            wishList.removeBook(book)
+        } else {
+            wishList.addBooks([book])
+        }
+        childContext.saveAndLogIfErrored()
     }
 
     override func viewDidLoad() {

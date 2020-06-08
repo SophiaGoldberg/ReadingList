@@ -14,6 +14,18 @@ extension UITableViewCell {
     func configure(from list: List) {
         textLabel!.text = list.name
         detailTextLabel!.text = "\(list.items.count) book\(list.items.count == 1 ? "" : "s")"
+        if list.isStockList(.wishList) {
+            if #available(iOS 13.0, *) {
+                imageView!.image = UIImage(systemName: "heart.fill")!
+            }
+            editingAccessoryType = .disclosureIndicator
+        } else {
+            if #available(iOS 13.0, *) {
+                imageView!.image = nil
+            }
+            editingAccessoryType = .none
+        }
+        
         if #available(iOS 13.0, *) { } else {
             defaultInitialise(withTheme: UserDefaults.standard[.theme])
         }
@@ -31,7 +43,6 @@ final class Organize: UITableViewController {
         clearsSelectionOnViewWillAppear = true
 
         tableView.register(BookTableHeader.self)
-
         searchController = UISearchController(filterPlaceholderText: "Your Lists")
         searchController.searchResultsUpdater = self
         searchController.delegate = self
@@ -62,28 +73,36 @@ final class Organize: UITableViewController {
 
     private func buildResultsController() -> NSFetchedResultsController<List> {
         let fetchRequest = NSManagedObject.fetchRequest(List.self, batch: 25)
+        if !tableView.isEditing {
+            fetchRequest.predicate = NSPredicate(format: "%K == 0", #keyPath(List.hidden))
+        }
         fetchRequest.sortDescriptors = sortDescriptors()
         fetchRequest.relationshipKeyPathsForPrefetching = [#keyPath(List.items)]
 
         // Use a constant property as the sectionNameKeyPath - this will ensure that there are no sections when there are no
         // results, and thus cause the section headers to be removed when the results count goes to 0.
         return NSFetchedResultsController<List>(fetchRequest: fetchRequest, managedObjectContext: PersistentStoreManager.container.viewContext,
-                                                sectionNameKeyPath: #keyPath(List.constantEmptyString), cacheName: nil)
+                                                sectionNameKeyPath: #keyPath(List.custom), cacheName: nil)
     }
 
     private func sortDescriptors() -> [NSSortDescriptor] {
-        var sortDescriptors = [NSSortDescriptor(\List.name)]
+        var sortDescriptors = [NSSortDescriptor(\List.custom)]
         switch UserDefaults.standard[.listSortOrder] {
         case .custom:
-            sortDescriptors.insert(NSSortDescriptor(\List.sort), at: 0)
+            sortDescriptors.append(contentsOf: [NSSortDescriptor(\List.sort), NSSortDescriptor(\List.name)])
         case .alphabetical:
-            break
+            sortDescriptors.append(NSSortDescriptor(\List.name))
         }
         return sortDescriptors
     }
 
     override func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
+        if !tableView.isEditing {
+            dataSource.resultsController.fetchRequest.predicate = NSPredicate(format: "%K == 0", #keyPath(List.hidden))
+        } else {
+            dataSource.resultsController.fetchRequest.predicate = NSPredicate(boolean: true)
+        }
         searchController.searchBar.isEnabled = !editing
         reloadHeaders()
     }
@@ -139,6 +158,7 @@ final class Organize: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        guard dataSource.resultsController.object(at: indexPath).custom else { return nil }
         return UISwipeActionsConfiguration(performFirstActionWithFullSwipe: false, actions: [
             UIContextualAction(style: .destructive, title: "Delete") { _, _, callback in
                 self.deleteList(forRowAt: indexPath) { didDelete in
@@ -200,10 +220,31 @@ final class Organize: UITableViewController {
             }
         }
     }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if tableView.isEditing {
+            let list = dataSource.resultsController.object(at: indexPath)
+            guard !list.custom else { return }
+            list.hidden.toggle()
+            list.managedObjectContext!.saveAndLogIfErrored()
+        }
+    }
 
     override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
         // No segue in edit mode
         return !tableView.isEditing
+    }
+    
+    override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+        if indexPath.section == 0 {
+            return .none
+        } else {
+            return .delete
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, shouldIndentWhileEditingRowAt indexPath: IndexPath) -> Bool {
+        return indexPath.section != 0
     }
 
     @available(iOS 13.0, *)
@@ -235,7 +276,9 @@ final class Organize: UITableViewController {
 extension Organize: HeaderConfigurable {
     func configureHeader(_ header: UITableViewHeaderFooterView, at index: Int) {
         guard let header = header as? BookTableHeader else { preconditionFailure() }
-        header.configure(labelText: "YOUR LISTS", enableSort: !isEditing && !searchController.isActive)
+        let isCustomListSection = index == 1
+        let labelText = isCustomListSection ? "CUSTOM LISTS" : "SYSTEM LISTS"
+        header.configure(labelText: labelText, enableSort: isCustomListSection && !isEditing && !searchController.isActive)
     }
 }
 

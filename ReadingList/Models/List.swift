@@ -7,6 +7,7 @@ class List: NSManagedObject {
     @NSManaged var order: BookSort
     @NSManaged var sort: Int32
     @NSManaged private(set) var custom: Bool
+    @NSManaged var hidden: Bool
 
     /** The item which hold a book-index pair for each book in this list */
     @NSManaged private(set) var items: Set<ListItem>
@@ -58,6 +59,10 @@ class List: NSManagedObject {
             index += 1
         }
     }
+    
+    func isStockList(_ stockList: StockList) -> Bool {
+        return !custom && name == stockList.rawValue
+    }
 
     class func names(fromContext context: NSManagedObjectContext) -> [String] {
         let fetchRequest = NSManagedObject.fetchRequest(List.self)
@@ -69,6 +74,18 @@ class List: NSManagedObject {
     class func maxSort(fromContext context: NSManagedObjectContext) -> Int32? {
         return context.getMaximum(sortValueKeyPath: \List.sort)
     }
+
+    class func getStockList(_ stockList: StockList, in context: NSManagedObjectContext) -> List {
+        let fetchRequest = NSManagedObject.fetchRequest(List.self)
+        fetchRequest.predicate = NSPredicate(format: "%K == 0 AND %K == %@", #keyPath(List.custom), #keyPath(List.name), stockList.rawValue)
+        fetchRequest.returnsObjectsAsFaults = false
+        fetchRequest.fetchLimit = 1
+        return try! context.fetch(fetchRequest).first!
+    }
+}
+
+enum StockList: String {
+    case wishList = "Wish List"
 }
 
 enum ListSortOrder: Int, CustomStringConvertible, CaseIterable, UserSettingType {
