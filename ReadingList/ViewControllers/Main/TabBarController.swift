@@ -1,6 +1,7 @@
 import UIKit
 import CoreSpotlight
 import Eureka
+import SwiftUI
 
 final class TabBarController: UITabBarController {
 
@@ -34,11 +35,22 @@ final class TabBarController: UITabBarController {
         let finished = UIStoryboard.BookTable.instantiateRoot() as! UISplitViewController
         (finished.masterNavigationRoot as! BookTable).readStates = [.finished]
 
-        viewControllers = [toRead, finished, UIStoryboard.Organize.instantiateRoot(), UIStoryboard.Settings.instantiateRoot()]
+        let settingsView: UIViewController
+        if #available(iOS 13.0, *) {
+            settingsView = UIHostingController(rootView: SettingsNew())
+        } else {
+            settingsView = UIStoryboard.Settings.instantiateRoot()
+        }
+        viewControllers = [toRead, finished, UIStoryboard.Organize.instantiateRoot(), settingsView]
 
         // Tabs 3 and 4 are already configured by the Organise and Settings storyboards
         tabBar.items![0].configure(tag: TabOption.toRead.rawValue, title: "To Read", image: #imageLiteral(resourceName: "courses"), selectedImage: #imageLiteral(resourceName: "courses-filled"))
         tabBar.items![1].configure(tag: TabOption.finished.rawValue, title: "Finished", image: #imageLiteral(resourceName: "to-do"), selectedImage: #imageLiteral(resourceName: "to-do-filled"))
+        if #available(iOS 13.0, *) {
+            // Configure the Settings tab if we are using SwiftUI rather than a storyboard,
+            // since only the storyboard will configure the tab bar icon.
+            tabBar.items![3].configure(tag: TabOption.settings.rawValue, title: "Settings", image: UIImage(systemName: "gearshape")!, selectedImage: UIImage(systemName: "gearshape.fill")!)
+        }
 
         monitorThemeSetting()
     }

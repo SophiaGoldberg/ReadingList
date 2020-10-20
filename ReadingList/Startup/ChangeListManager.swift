@@ -10,6 +10,13 @@ struct ChangeListProvider {
     )
 
     let changeLog = [
+        Version(major: 1, minor: 15, patch: 0): [
+            WhatsNew.Item(
+                title: "Homescreen Widgets",
+                subtitle: "On iOS 14, quickly add new books",
+                image: UIImage(largeSystemImageNamed: "apps.iphone") ?? UIImage(largeSystemImageNamed: "square.grid.2x2.fill")
+            )
+        ],
         Version(major: 1, minor: 14, patch: 0): [
             WhatsNew.Item(
                 title: "Homescreen Widgets",
@@ -41,17 +48,23 @@ struct ChangeListProvider {
         ]
     ]
 
-    func thisVersionChangeList() -> UIViewController? {
+    private func getItemsToPresent() -> [WhatsNew.Item]? {
         let thisVersion = BuildInfo.thisBuild.version
-        let itemsToPresent = changeLog[thisVersion] ?? changeLog.filter {
+        return changeLog[thisVersion] ?? changeLog.filter {
             // Get the versions which match this major and minor version...
             ($0.key.major, $0.key.minor) == (thisVersion.major, thisVersion.minor)
         }.max {
             // ...and find the largest patch-number version of that (if any)
             $0.key < $1.key
         }?.value
+    }
 
-        if var itemsToPresent = itemsToPresent {
+    func hasChangeList() -> Bool {
+        return getItemsToPresent() != nil
+    }
+
+    func thisVersionChangeList() -> WhatsNewViewController? {
+        if var itemsToPresent = getItemsToPresent() {
             itemsToPresent.append(generalImprovements)
             return whatsNewViewController(for: itemsToPresent)
         } else {
