@@ -9,6 +9,7 @@ cache:
   directories:
   - "$HOME/Library/Caches/Homebrew/"
   - "/usr/local/lib/mint/"
+  - "$HOME/SourcePackages"
 install:
 - bundle install
 - brew update && brew install mint

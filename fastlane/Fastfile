@@ -16,7 +16,8 @@ platform :ios do
     match(type: "appstore", app_identifier: ["com.andrewbennet.books", "com.andrewbennet.books.ReadingListWidget"])
     build_app(
         project: "ReadingList.xcodeproj",
-        scheme: "ReadingList"
+        scheme: "ReadingList",
+        cloned_source_packages_path: "$HOME/SourcePackages"
     )
   end
 
