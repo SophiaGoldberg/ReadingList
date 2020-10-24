@@ -5,15 +5,19 @@ import ReadingList_Foundation
 
 final class General: FormViewController {
     override func viewDidLoad() {
+        if #available(iOS 13.0, *) {
+            initialiseInsetGroupedTable()
+        }
+
         super.viewDidLoad()
 
         form +++ Section(header: "Appearance", footer: "Enable Expanded Descriptions to automatically show each book's full description.")
             <<< SwitchRow {
                 $0.title = "Expanded Descriptions"
-                $0.value = UserDefaults.standard[.showExpandedDescription]
+                $0.value = GeneralSettings.showExpandedDescription
                 $0.onChange { row in
                     guard let newValue = row.value else { return }
-                    UserDefaults.standard[.showExpandedDescription] = newValue
+                    GeneralSettings.showExpandedDescription = newValue
                 }
             }
 
@@ -21,14 +25,14 @@ final class General: FormViewController {
             form.allSections[0] <<< ThemedPushRow<Theme> {
                 $0.title = "Theme"
                 $0.options = Theme.allCases
-                $0.value = UserDefaults.standard[.theme]
+                $0.value = GeneralSettings.theme
                 $0.onChange { row in
                     guard let theme = row.value else { return }
                     // Half a second seems long enough for the animation to have completed; if we change the theme while
                     // the animation is still running, we get stuck with an incorrect coloured navigation item. Could
                     // not find a workaround, so settled for a slightly longer delay before theme transition.
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        UserDefaults.standard[.theme] = theme
+                        GeneralSettings.theme = theme
                         NotificationCenter.default.post(name: .ThemeSettingChanged, object: nil)
                         UserEngagement.logEvent(.changeTheme)
                     }
@@ -40,10 +44,10 @@ final class General: FormViewController {
                 <<< ThemedPushRow<ProgressType> {
                     $0.title = "Default Progress Type"
                     $0.options = [.page, .percentage]
-                    $0.value = UserDefaults.standard[.defaultProgressType]
+                    $0.value = GeneralSettings.defaultProgressType
                     $0.onChange {
                         guard let newValue = $0.value else { return }
-                        UserDefaults.standard[.defaultProgressType] = newValue
+                        GeneralSettings.defaultProgressType = newValue
                     }
                 }
 
@@ -53,12 +57,12 @@ final class General: FormViewController {
                 """)
                 <<< SwitchRow {
                     $0.title = "Remember Last Selection"
-                    $0.value = UserDefaults.standard[.prepopulateLastLanguageSelection]
+                    $0.value = GeneralSettings.prepopulateLastLanguageSelection
                     $0.onChange {
                         guard let newValue = $0.value else { return }
-                        UserDefaults.standard[.prepopulateLastLanguageSelection] = newValue
+                        GeneralSettings.prepopulateLastLanguageSelection = newValue
                         if !newValue {
-                            UserDefaults.standard[.lastSelectedLanguage] = nil
+                            LightweightDataStore.lastSelectedLanguage = nil
                         }
                     }
                 }
@@ -66,7 +70,7 @@ final class General: FormViewController {
                     $0.title = "Restrict Search Results"
                     $0.options = [.none] + LanguageIso639_1.allCases.filter { $0.canFilterGoogleSearchResults }.map { .some($0) }
                     $0.value = {
-                        if let languageRestriction = UserDefaults.standard[.searchLanguageRestriction] {
+                        if let languageRestriction = GeneralSettings.searchLanguageRestriction {
                             return .some(languageRestriction)
                         } else {
                             return LanguageSelection.none
@@ -74,9 +78,9 @@ final class General: FormViewController {
                     }()
                     $0.onChange {
                         if let languageSelection = $0.value, case let .some(language) = languageSelection {
-                            UserDefaults.standard[.searchLanguageRestriction] = language
+                            GeneralSettings.searchLanguageRestriction = language
                         } else {
-                            UserDefaults.standard[.searchLanguageRestriction] = nil
+                            GeneralSettings.searchLanguageRestriction = nil
                         }
                         UserEngagement.logEvent(.changeSearchOnlineLanguage)
                     }
@@ -86,11 +90,11 @@ final class General: FormViewController {
                 Crash reports can be automatically sent to help me detect and fix issues. Analytics can \
                 be used to help gather usage statistics for different features. This never includes any \
                 details of your books.\
-                \(BuildInfo.appConfiguration != .testFlight ? "" : " If Beta testing, these cannot be disabled.")
+                \(BuildInfo.thisBuild.type != .testFlight ? "" : " If Beta testing, these cannot be disabled.")
                 """)
                 <<< SwitchRow {
                     $0.title = "Send Crash Reports"
-                    $0.disabled = Condition(booleanLiteral: BuildInfo.appConfiguration == .testFlight)
+                    $0.disabled = Condition(booleanLiteral: BuildInfo.thisBuild.type == .testFlight)
                     $0.onChange { [unowned self] in
                         self.crashReportsSwitchChanged($0)
                     }
@@ -98,7 +102,7 @@ final class General: FormViewController {
                 }
                 <<< SwitchRow {
                     $0.title = "Send Analytics"
-                    $0.disabled = Condition(booleanLiteral: BuildInfo.appConfiguration == .testFlight)
+                    $0.disabled = Condition(booleanLiteral: BuildInfo.thisBuild.type == .testFlight)
                     $0.onChange { [unowned self] in
                         self.analyticsSwitchChanged($0)
                     }
@@ -111,7 +115,7 @@ final class General: FormViewController {
     func crashReportsSwitchChanged(_ sender: _SwitchRow) {
         guard let switchValue = sender.value else { return }
         if switchValue {
-            UserDefaults.standard[.sendCrashReports] = true
+            UserEngagement.sendCrashReports = true
             UserEngagement.initialiseUserAnalytics()
             UserEngagement.logEvent(.enableCrashReports)
         } else {
@@ -126,7 +130,7 @@ final class General: FormViewController {
                     sender.reload()
                 } else {
                     UserEngagement.logEvent(.disableCrashReports)
-                    UserDefaults.standard[.sendCrashReports] = false
+                    UserEngagement.sendCrashReports = false
                 }
             }
         }
@@ -135,7 +139,7 @@ final class General: FormViewController {
     func analyticsSwitchChanged(_ sender: _SwitchRow) {
         guard let switchValue = sender.value else { return }
         if switchValue {
-            UserDefaults.standard[.sendAnalytics] = true
+            UserEngagement.sendAnalytics = true
             UserEngagement.initialiseUserAnalytics()
             UserEngagement.logEvent(.enableAnalytics)
         } else {
@@ -149,7 +153,7 @@ final class General: FormViewController {
                     sender.reload()
                 } else {
                     UserEngagement.logEvent(.disableAnalytics)
-                    UserDefaults.standard[.sendAnalytics] = false
+                    UserEngagement.sendAnalytics = false
                 }
             }
         }

@@ -12,12 +12,12 @@ protocol OrganizeTableViewDataSourceCommon: UITableViewEmptyDetectingDataSource,
 
 extension OrganizeTableViewDataSourceCommon {
     func canMoveRow(at indexPath: IndexPath) -> Bool {
-        guard UserDefaults.standard[.listSortOrder] == .custom else { return false }
+        guard ListSortOrder.selectedSort == .custom else { return false }
         return resultsController.sections![0].numberOfObjects > 1
     }
 
     func moveRow(at sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-        guard UserDefaults.standard[.listSortOrder] == .custom else {
+        guard ListSortOrder.selectedSort == .custom else {
             assertionFailure()
             return
         }

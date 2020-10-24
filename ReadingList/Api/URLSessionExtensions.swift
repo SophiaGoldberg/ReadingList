@@ -1,6 +1,6 @@
 import Foundation
 import Promises
-import SwiftyJSON
+import os.log
 
 public extension URLSession {
 
@@ -16,8 +16,10 @@ public extension URLSession {
 
     func data(url: URL) -> Promise<Data> {
         return Promise<Data> { fulfill, reject in
+            os_log("Requesting %{public}s", type: .info, url.absoluteString)
             self.startedDataTask(with: url) { data, _, error in
                 if let error = error {
+                    os_log("Data request for URL %{public}s completed with error", type: .error, url.absoluteString)
                     reject(error)
                 } else if let data = data {
                     fulfill(data)
@@ -25,19 +27,4 @@ public extension URLSession {
             }
         }
     }
-
-    func json(url: URL) -> Promise<JSON> {
-        return self.data(url: url)
-            .then { data -> JSON in
-                if let jsonData = try? JSON(data: data) {
-                    return jsonData
-                } else {
-                    throw HTTPError.noJsonData
-                }
-            }
-    }
-}
-
-public enum HTTPError: Error {
-    case noJsonData
 }

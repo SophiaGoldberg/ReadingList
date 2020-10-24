@@ -23,7 +23,7 @@ class BookSortIndexManager {
      Determines the sort direction from the value of the addBooksToTopOfCustom UserDefaults setting
     */
     convenience init(context: NSManagedObjectContext, readState: BookReadState, exclude: Book? = nil) {
-        self.init(context: context, readState: readState, sortUpwards: UserDefaults.standard[.addBooksToTopOfCustom], exclude: exclude)
+        self.init(context: context, readState: readState, sortUpwards: GeneralSettings.addBooksToTopOfCustom, exclude: exclude)
     }
 
     func getAndIncrementSort() -> Int32 {

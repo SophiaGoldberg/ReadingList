@@ -24,8 +24,8 @@ class Screenshots: XCTestCase {
 
     func testSnapshot() {
 
-        // Screenshot is designed for iOS 13 only
-        guard #available(iOS 13.0, *) else { return }
+        // Screenshot is designed for iOS 14 only
+        guard #available(iOS 14.0, *) else { return }
 
         let app = ReadingListApp()
         app.clickTab(.toRead)
@@ -50,7 +50,7 @@ class Screenshots: XCTestCase {
             app.swipeDown()
         }
         app.navigationBars["Finished"].buttons["Add"].tap()
-        app.sheets["Add New Book"].buttons["Scan Barcode"].tap()
+        app.collectionViews.buttons["Scan Barcode"].tap()
         snapshot("2_ScanBarcode")
 
         app.navigationBars["Scan Barcode"].buttons["Cancel"].tap()
@@ -93,11 +93,5 @@ class Screenshots: XCTestCase {
             app.swipeUp()
         }
         snapshot("5_Organise")
-
-        //app.tabBars.buttons["Settings"].tap()
-        //app.tables.staticTexts["General"].tap()
-        //app.tables.staticTexts["Black"].tap()
-        //app.tabBars.buttons["To Read"].tap()
-        //snapshot("6_DarkMode")
     }
 }

@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import ReadingList_Foundation
 
 class BookTableViewCell: UITableViewCell {
     @IBOutlet private weak var titleLabel: UILabel!
@@ -23,7 +24,7 @@ class BookTableViewCell: UITableViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         if #available(iOS 13.0, *) { } else {
-            initialise(withTheme: UserDefaults.standard[.theme])
+            initialise(withTheme: GeneralSettings.theme)
         }
         resetUI()
     }
@@ -65,7 +66,7 @@ class BookTableViewCell: UITableViewCell {
         }
 
         #if DEBUG
-            if UserDefaults.standard[.showSortNumber] {
+            if Debug.showSortNumber {
                 titleLabel.text = "(\(book.sort)) \(book.title)"
             }
         #endif
@@ -77,23 +78,18 @@ class BookTableViewCell: UITableViewCell {
         readingProgress.progress = progress
     }
 
-    func configureFrom(_ searchResult: SearchResult) {
-        titleLabel.text = {
-            if let subtitle = searchResult.subtitle {
-                return "\(searchResult.title): \(subtitle)"
-            } else {
-                return searchResult.title
-            }
-        }()
-        authorsLabel.text = searchResult.authors.fullNames
+    func configureFrom(_ searchResult: GoogleBooksApi.SearchResult) {
+        titleLabel.text = searchResult.titleAndSubtitle
+        authorsLabel.text = searchResult.authorList
 
-        guard let coverURL = searchResult.thumbnailCoverUrl else { bookCover.image = #imageLiteral(resourceName: "CoverPlaceholder"); return }
-        coverImageRequest = URLSession.shared.startedDataTask(with: coverURL) { [weak self] data, _, _ in
-            guard let cell = self else { return }
-            DispatchQueue.main.async {
-                // Cancellations appear to be reported as errors. Ideally we would detect non-cancellation
-                // errors (e.g. 404), and show the placeholder in those cases. For now, just make the image blank.
-                cell.bookCover.image = UIImage(optionalData: data)
+        if let coverURL = searchResult.thumbnailImage {
+            coverImageRequest = URLSession.shared.startedDataTask(with: coverURL) { [weak self] data, _, _ in
+                guard let cell = self else { return }
+                DispatchQueue.main.async {
+                    // Cancellations appear to be reported as errors. Ideally we would detect non-cancellation
+                    // errors (e.g. 404), and show the placeholder in those cases. For now, just make the image blank.
+                    cell.bookCover.image = UIImage(optionalData: data)
+                }
             }
         }
     }

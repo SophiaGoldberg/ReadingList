@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import UIKit
 import os.log
 
 public extension NSManagedObject {

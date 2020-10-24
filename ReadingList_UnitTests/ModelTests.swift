@@ -19,7 +19,7 @@ class ModelTests: XCTestCase {
         let originalReadingMaxSort = Book.maxSort(with: .reading, from: testContainer.viewContext) ?? -1
 
         // Ensure settings are default
-        UserDefaults.standard[.addBooksToTopOfCustom] = false
+        GeneralSettings.addBooksToTopOfCustom = false
 
         func createBook(_ readState: BookReadState, _ title: String) -> Book {
             let book = Book(context: testContainer.viewContext)
@@ -61,7 +61,7 @@ class ModelTests: XCTestCase {
         try! testContainer.viewContext.save()
 
         // Update the setting
-        UserDefaults.standard[.addBooksToTopOfCustom] = true
+        GeneralSettings.addBooksToTopOfCustom = true
 
         // Add a book and check the sort is below other books
         let book4 = createBook(.toRead, "title4")

@@ -1,5 +1,7 @@
 import Foundation
 import CoreData
+import PersistedPropertyWrapper
+import ReadingList_Foundation
 
 @objc(List)
 class List: NSManagedObject {
@@ -82,15 +84,28 @@ class List: NSManagedObject {
         fetchRequest.fetchLimit = 1
         return try! context.fetch(fetchRequest).first!
     }
+
+    class func getOrCreate(inContext context: NSManagedObjectContext, withName name: String) -> List {
+        let listFetchRequest = NSManagedObject.fetchRequest(List.self, limit: 1)
+        listFetchRequest.predicate = NSPredicate(format: "%K == %@", #keyPath(Subject.name), name)
+        listFetchRequest.returnsObjectsAsFaults = false
+        if let existingList = (try! context.fetch(listFetchRequest)).first {
+            return existingList
+        }
+        return List(context: context, name: name)
+    }
 }
 
 enum StockList: String {
     case wishList = "Wish List"
 }
 
-enum ListSortOrder: Int, CustomStringConvertible, CaseIterable, UserSettingType {
+enum ListSortOrder: Int, CustomStringConvertible, CaseIterable {
     case custom = 0
     case alphabetical = 1
+
+    @Persisted("listSortOrder", defaultValue: .custom)
+    static var selectedSort: ListSortOrder
 
     var description: String {
         switch self {

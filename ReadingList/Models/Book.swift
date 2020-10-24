@@ -107,7 +107,11 @@ class Book: NSManagedObject {
     private func updateComputedProgressData() {
         if currentProgressIsPage {
             if let pageCount = pageCount, let currentPage = currentPage, pageCount != 0 {
-                currentPercentage = min(100, Int32(round((Float(currentPage) / Float(pageCount)) * 100)))
+                if let calculatedPercentage = Int32(exactly: round((Float(currentPage) / Float(pageCount)) * 100)) {
+                    currentPercentage = min(100, calculatedPercentage)
+                } else {
+                    currentPercentage = 100
+                }
             } else {
                 currentPercentage = nil
             }
@@ -231,43 +235,84 @@ extension Book {
         }
     }
 
-    // FUTURE: make a convenience init which takes a fetch result?
-    func populate(fromFetchResult fetchResult: FetchResult) {
-        googleBooksId = fetchResult.id
-        title = fetchResult.title
-        subtitle = fetchResult.subtitle
-        authors = fetchResult.authors
-        bookDescription = fetchResult.description
-        subjects = Set(fetchResult.subjects.map { Subject.getOrCreate(inContext: self.managedObjectContext!, withName: $0) })
-        coverImage = fetchResult.coverImage
-        pageCount = fetchResult.pageCount
-        publicationDate = fetchResult.publishedDate
-        publisher = fetchResult.publisher
-        isbn13 = fetchResult.isbn13?.int
-        language = fetchResult.language
+    func set<T>(_ key: ReferenceWritableKeyPath<Book, T?>, ifNotNil value: T?) {
+        if let value = value {
+            self[keyPath: key] = value
+        }
     }
 
-    static func get(fromContext context: NSManagedObjectContext, googleBooksId: String? = nil, isbn: String? = nil) -> Book? {
-        // if both are nil, leave early
-        guard googleBooksId != nil || isbn != nil else { return nil }
+    func populate(fromFetchResult fetchResult: GoogleBooksApi.FetchResult) {
+        googleBooksId = fetchResult.id
+        title = fetchResult.title
+        if !fetchResult.authors.isEmpty {
+            authors = fetchResult.authors.map(Author.init(firstNameLastName:))
+        }
+        set(\.subtitle, ifNotNil: fetchResult.subtitle)
+        set(\.bookDescription, ifNotNil: fetchResult.description)
+        subjects.formUnion(fetchResult.subjects.map { Subject.getOrCreate(inContext: self.managedObjectContext!, withName: $0) })
+        set(\.coverImage, ifNotNil: fetchResult.image)
+        set(\.pageCount, ifNotNil: fetchResult.pageCount?.int32)
+        set(\.publisher, ifNotNil: fetchResult.publisher)
+        set(\.isbn13, ifNotNil: fetchResult.isbn13?.int)
+        set(\.language, ifNotNil: fetchResult.language)
+    }
 
-        // First try fetching by google books ID
+    func populate(fromCsvRow values: BookCSVImportRow) {
+        title = values.title
+        authors = values.authors
+
+        set(\.subtitle, ifNotNil: values.subtitle)
+        set(\.googleBooksId, ifNotNil: values.googleBooksId)
+        set(\.isbn13, ifNotNil: values.isbn13?.int)
+        if googleBooksId == nil && manualBookId == nil {
+            manualBookId = values.manualBookId ?? UUID().uuidString
+        }
+        set(\.pageCount, ifNotNil: values.pageCount)
+        if let page = values.currentPage {
+            setProgress(.page(page))
+        } else if let percentage = values.currentPercentage {
+            setProgress(.percentage(percentage))
+        }
+        set(\.notes, ifNotNil: values.notes?.replacingOccurrences(of: "\r\n", with: "\n"))
+        set(\.publicationDate, ifNotNil: values.publicationDate)
+        set(\.publisher, ifNotNil: values.publisher)
+        set(\.bookDescription, ifNotNil: values.description?.replacingOccurrences(of: "\r\n", with: "\n"))
+        if let started = values.started {
+            if let finished = values.finished {
+                setFinished(started: started, finished: finished)
+            } else {
+                setReading(started: started)
+            }
+        }
+
+        if let rating = values.rating, let integerRating = Int16(exactly: rating * 2), integerRating > 0 && integerRating <= 10 {
+            self.rating = integerRating
+        }
+        if let language = values.language {
+            set(\.language, ifNotNil: LanguageIso639_1(rawValue: language))
+        }
+    }
+
+    static func get(fromContext context: NSManagedObjectContext, googleBooksId: String? = nil, isbn: String? = nil, manualBookId: String? = nil) -> Book? {
+        let fetchRequest = NSManagedObject.fetchRequest(Book.self, limit: 1)
+        fetchRequest.returnsObjectsAsFaults = false
+
+        // Collect the predicates which we apply (OR'd) to our fetch request
+        var predicates = [NSPredicate]()
         if let googleBooksId = googleBooksId {
-            let googleBooksfetch = NSManagedObject.fetchRequest(Book.self, limit: 1)
-            googleBooksfetch.predicate = NSPredicate(format: "%K == %@", #keyPath(Book.googleBooksId), googleBooksId)
-            googleBooksfetch.returnsObjectsAsFaults = false
-            if let result = (try! context.fetch(googleBooksfetch)).first { return result }
+            predicates.append(NSPredicate(format: "%K == %@", #keyPath(Book.googleBooksId), googleBooksId))
         }
-
-        // then try fetching by ISBN
         if let isbn = isbn {
-            let isbnFetch = NSManagedObject.fetchRequest(Book.self, limit: 1)
-            isbnFetch.predicate = NSPredicate(format: "%K == %@", Book.Key.isbn13.rawValue, isbn)
-            isbnFetch.returnsObjectsAsFaults = false
-            return (try! context.fetch(isbnFetch)).first
+            predicates.append(NSPredicate(format: "%K == %@", Book.Key.isbn13.rawValue, isbn))
+        }
+        if let manualBookId = manualBookId {
+            predicates.append(NSPredicate(format: "%K == %@", #keyPath(Book.manualBookId), manualBookId))
         }
 
-        return nil
+        guard !predicates.isEmpty else { return nil }
+        fetchRequest.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+
+        return (try! context.fetch(fetchRequest)).first
     }
 
     /**

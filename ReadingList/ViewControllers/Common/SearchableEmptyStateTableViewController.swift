@@ -65,7 +65,7 @@ class UITableViewSearchableEmptyStateManager: UITableViewEmptyStateManager {
             title = titleForNonSearchEmptyState().attributedWithFont(emptyStateTitleFont)
         }
 
-        return attributeWithThemeColor(title, color: UserDefaults.standard[.theme].titleTextColor)
+        return attributeWithThemeColor(title, color: GeneralSettings.theme.titleTextColor)
     }
 
     final override func textForEmptyState() -> NSAttributedString {
@@ -76,7 +76,7 @@ class UITableViewSearchableEmptyStateManager: UITableViewEmptyStateManager {
             text = textForNonSearchEmptyState()
         }
 
-        return attributeWithThemeColor(text, color: UserDefaults.standard[.theme].subtitleTextColor)
+        return attributeWithThemeColor(text, color: GeneralSettings.theme.subtitleTextColor)
     }
 
     final override func positionForEmptyState() -> EmptyStatePosition {

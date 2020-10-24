@@ -37,7 +37,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        guard url.isFileURL && url.pathExtension == "csv" else { return false }
         return launchManager.handleOpenUrl(url)
     }
 }

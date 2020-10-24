@@ -7,7 +7,7 @@ import ReadingList_Foundation
 import os.log
 
 @available(iOS, obsoleted: 13.0)
-@objc enum Theme: Int, UserSettingType, CaseIterable {
+@objc enum Theme: Int, CaseIterable {
     case normal = 1
     case dark = 2
     case black = 3
@@ -154,7 +154,7 @@ fileprivate extension UIViewController {
             assertionFailure("transitionThemeChange called on a non-themable controller"); return
         }
         UIView.transition(with: self.view, duration: 0.3, options: [.beginFromCurrentState, .transitionCrossDissolve], animations: {
-            themable.initialise(withTheme: UserDefaults.standard[.theme])
+            themable.initialise(withTheme: GeneralSettings.theme)
             themable.themeSettingDidChange?()
         }, completion: nil)
     }
@@ -170,7 +170,7 @@ extension ThemeableViewController {
     @available(iOS, obsoleted: 13.0)
     func monitorThemeSetting() {
         if #available(iOS 13.0, *) { return }
-        initialise(withTheme: UserDefaults.standard[.theme])
+        initialise(withTheme: GeneralSettings.theme)
         NotificationCenter.default.addObserver(self, selector: #selector(transitionThemeChange), name: .ThemeSettingChanged, object: nil)
     }
 }
@@ -180,7 +180,7 @@ extension UIViewController {
         let safariVC = SFSafariViewController(url: url)
         // iOS 13 and up has its own theming, no need to set the preferred tint colour
         if #available(iOS 13.0, *) { } else {
-            if UserDefaults.standard[.theme].isDark {
+            if GeneralSettings.theme.isDark {
                 safariVC.preferredBarTintColor = .black
             }
         }
@@ -305,7 +305,7 @@ class ThemedSplitViewController: UISplitViewController, UISplitViewControllerDel
         super.traitCollectionDidChange(previousTraitCollection)
         if #available(iOS 13.0, *) { return }
         if previousTraitCollection?.horizontalSizeClass != traitCollection.horizontalSizeClass {
-            initialise(withTheme: UserDefaults.standard[.theme])
+            initialise(withTheme: GeneralSettings.theme)
         }
     }
 
@@ -325,7 +325,7 @@ class ThemedSplitViewController: UISplitViewController, UISplitViewControllerDel
         if #available(iOS 13.0, *) {
             return super.preferredStatusBarStyle
         } else {
-            return UserDefaults.standard[.theme].statusBarStyle
+            return GeneralSettings.theme.statusBarStyle
         }
     }
 }
@@ -354,7 +354,7 @@ class ThemedNavigationController: UINavigationController, ThemeableViewControlle
         navigationBar.initialise(withTheme: theme)
 
         let translucent = splitViewController?.traitCollection.horizontalSizeClass != .regular
-        navigationBar.setTranslucency(translucent, colorIfNotTranslucent: UserDefaults.standard[.theme].viewBackgroundColor)
+        navigationBar.setTranslucency(translucent, colorIfNotTranslucent: GeneralSettings.theme.viewBackgroundColor)
     }
 }
 
@@ -434,7 +434,11 @@ extension Theme {
 
         if #available(iOS 13.0, *) { return }
         SwitchRow.defaultCellUpdate = initialiseCell(_:_:)
-        DateRow.defaultCellUpdate = initialiseCell(_:_:)
+        DateInlineRow.defaultCellUpdate = initialiseCell(_:_:)
+        DateInlineRow.InlineRow.defaultCellUpdate = { cell, _ in
+            initialiseCell(cell)
+            cell.datePicker.setValue(self.titleTextColor, forKey: "textColor")
+        }
         ThemedPushRow<Theme>.defaultCellUpdate = initialiseCell(_:_:)
         ListCheckRow<Theme>.defaultCellUpdate = initialiseCell(_:_:)
         ThemedPushRow<ProgressType>.defaultCellUpdate = initialiseCell(_:_:)

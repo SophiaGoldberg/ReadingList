@@ -1,90 +1,113 @@
 import Foundation
-import SwiftyJSON
 import Promises
 import ReadingList_Foundation
 import os.log
 
-class GoogleBooks {
+struct GoogleBooksApi {
+
+    private let jsonDecoder = JSONDecoder()
 
     /**
      Searches on Google Books for the given search string
      */
-    static func search(_ text: String) -> Promise<[SearchResult]> {
+    func search(_ text: String) -> Promise<[SearchResult]> {
         os_log("Searching for Google Books with query", type: .debug)
-        let languageRestriction = UserDefaults.standard[.searchLanguageRestriction]
-        guard let url = GoogleBooksRequest.searchText(text, languageRestriction).url else {
-            return Promise<[SearchResult]>(GoogleError.invalidUrl)
+        guard let url = GoogleBooksRequest.searchText(text, GeneralSettings.searchLanguageRestriction).url else {
+            return Promise<[SearchResult]>(ResponseError.invalidUrl)
         }
-        return URLSession.shared.json(url: url)
-            .then(GoogleBooksParser.assertNoError)
-            .then(GoogleBooksParser.parseSearchResults)
+        return URLSession.shared.data(url: url)
+            .then(assertNoError)
+            .then(parseSearchResults)
     }
 
     /**
      Searches on Google Books for the given ISBN
      */
-    static func fetch(isbn: String) -> Promise<FetchResult> {
+    func fetch(isbn: String) -> Promise<FetchResult> {
         os_log("Searching for Google Book with ISBN %{public}s", type: .debug, isbn)
         guard let url = GoogleBooksRequest.searchIsbn(isbn).url else {
-            return Promise<FetchResult>(GoogleError.invalidUrl)
+            os_log("Invalid URL for ISBN search (%{public}s)", type: .error, isbn)
+            return Promise<FetchResult>(ResponseError.invalidUrl)
         }
-        return URLSession.shared.json(url: url)
-            .then(GoogleBooksParser.parseSearchResults)
+        return URLSession.shared.data(url: url)
+            .then(parseSearchResults)
             .then {
-                guard let id = $0.first?.id else { throw GoogleError.noResult }
-                return fetch(googleBooksId: id)
+                guard let result = $0.first else { throw ResponseError.noResult }
+                os_log("Resolved ISBN %{public}s to Google Books ID %{public}s", type: .info, isbn, result.id)
+                return self.fetch(searchResult: result)
             }
     }
 
     /**
      Fetches the specified book from Google Books. Performs a supplementary request for the
-     book's cover image data if necessary.
+     book's cover image data if requested.
      */
-    static func fetch(googleBooksId: String) -> Promise<FetchResult> {
-        return fetch(googleBooksId: googleBooksId, existingSearchResult: nil)
+    func fetch(googleBooksId: String, fetchCoverImage: Bool = true) -> Promise<FetchResult> {
+        return fetch(googleBooksId: googleBooksId, existingSearchResult: nil, fetchCoverImage: fetchCoverImage)
     }
 
     /**
      Fetches the book identified by a search result from Google Books. If the fetch results are not sufficient
      to create a Book object (sometimes fetch results miss data which is present in a search result), an attempt
      is made to "mix" the data from the search and fetch results. Performs a supplementary request for the
-     book's cover image data if necessary.
+     book's cover image data if requested.
      */
-    static func fetch(searchResult: SearchResult) -> Promise<FetchResult> {
-        return fetch(googleBooksId: searchResult.id, existingSearchResult: searchResult)
+    func fetch(searchResult: SearchResult, fetchCoverImage: Bool = true) -> Promise<FetchResult> {
+        return fetch(googleBooksId: searchResult.id, existingSearchResult: searchResult, fetchCoverImage: fetchCoverImage)
     }
 
     /**
      Fetches the specified book from Google Books. If the results are not sufficient to create a Book object,
      and a search result was supplied, an attempt is made to "mix" the data from the search and fetch results.
-     Performs a supplementary request for the book's cover image data if necessary.
+     Performs a supplementary request for the book's cover image data if requested.
      */
-    private static func fetch(googleBooksId: String, existingSearchResult: SearchResult?) -> Promise<FetchResult> {
-        os_log("Fetching Google Book with ID %{public}s", type: .debug, googleBooksId)
+    private func fetch(googleBooksId: String, existingSearchResult: SearchResult?, fetchCoverImage: Bool) -> Promise<FetchResult> {
+        os_log("Fetching Google Book with ID %{public}s", type: .info, googleBooksId)
         guard let url = GoogleBooksRequest.fetch(googleBooksId).url else {
-            return Promise<FetchResult>(GoogleError.invalidUrl)
+            return Promise<FetchResult>(ResponseError.invalidUrl)
         }
-        let fetchPromise = URLSession.shared.json(url: url)
-            .then { json -> FetchResult in
-                if let fetchResult = GoogleBooksParser.parseFetchResults(json) {
+        let fetchPromise = URLSession.shared.data(url: url)
+            .then { data -> ItemMetadata in
+                os_log("Data response for Google Book %{public}s received", type: .info, googleBooksId)
+                return try self.jsonDecoder.decode(ItemMetadata.self, from: data)
+            }
+            .catch {
+                os_log("Error decoding JSON into ItemMetadata for Google Book %{public}s: %{public}s", type: .error, googleBooksId, $0.localizedDescription)
+            }
+            .then { result -> FetchResult in
+                if let searchResult = existingSearchResult {
+                    return FetchResult(result, searchResult)
+                } else if let fetchResult = FetchResult(result) {
                     return fetchResult
+                } else {
+                    os_log("Could not build a FetchResult from the ItemMetadata", type: .error)
+                    throw ResponseError.invalidResult
                 }
-                if let existingSearchResult = existingSearchResult,
-                    let fetchResult = GoogleBooksParser.parseFetchResults(json, existingSearchResult: existingSearchResult) {
-                    return fetchResult
+            }
+            .recover { error -> FetchResult in
+                if let existingSearchResult = existingSearchResult {
+                    os_log("Falling back to using existing search result for Google Book with ID %{public}s", type: .default, googleBooksId)
+                    return FetchResult(existingSearchResult)
                 }
-                throw GoogleError.missingEssentialData
+                throw error
             }
 
-        let coverPromise = fetchPromise.then { getCover(googleBooksId: $0.id) }
+        if !fetchCoverImage {
+            return fetchPromise
+        }
+
+        let coverPromise = fetchPromise.then {
+            self.getCover(googleBooksId: $0.id)
+        }
 
         return any(fetchPromise, coverPromise).then { fetch, cover -> FetchResult in
+            os_log("Fetch and Cover request both complete for Google Book %{public}s", type: .info, googleBooksId)
             switch fetch {
-            case let .value(fetchResultValue):
+            case var .value(fetchResult):
                 if case let .value(coverDataValue) = cover {
-                    fetchResultValue.coverImage = coverDataValue
+                    fetchResult.image = coverDataValue
                 }
-                return fetchResultValue
+                return fetchResult
             case let .error(fetchResultError):
                 throw fetchResultError
             }
@@ -94,163 +117,201 @@ class GoogleBooks {
     /**
      Gets the cover image data for the book corresponding to the Google Books ID (if exists).
      */
-    static func getCover(googleBooksId: String) -> Promise<Data> {
+    func getCover(googleBooksId: String) -> Promise<Data> {
         guard let url = GoogleBooksRequest.coverImage(googleBooksId, .thumbnail).url else {
-            return Promise<Data>(GoogleError.invalidUrl)
+            return Promise<Data>(ResponseError.invalidUrl)
         }
+        os_log("Requesting cover image for Google Books ID %{public}s", type: .info)
         return URLSession.shared.data(url: url)
     }
-}
 
-class GoogleBooksParser {
-
-    static func parseError(json: JSON) -> GoogleError? {
-        if let code = json["error", "code"].int, let message = json["error", "message"].string {
-            return GoogleError.specifiedError(code: code, message: message)
+    func assertNoError(json: Data) throws {
+        if let googleError = try? jsonDecoder.decode(ReportedError.self, from: json) {
+            throw ResponseError.specifiedError(code: googleError.error.code, message: googleError.error.message)
         }
-        return nil
     }
 
-    static func assertNoError(json: JSON) throws -> JSON {
-        if let error = GoogleBooksParser.parseError(json: json) {
+    func parseSearchResults(_ searchResults: Data) throws -> [SearchResult] {
+        os_log("Parsing data as SearchResult array", type: .info)
+        do {
+            let results = try jsonDecoder.decode(SearchResults.self, from: searchResults)
+            return results.items?.compactMap(SearchResult.init).distinct(by: \.id) ?? []
+        } catch {
+            os_log("Error parsing search results: %{public}s", type: .error, error.localizedDescription)
             throw error
-        } else {
-            return json
         }
     }
 
-    static func parseSearchResults(_ searchResults: JSON) -> [SearchResult] {
-        return searchResults["items"].map { $0.1 }.reduce([SearchResult]()) { result, element in
-            guard let item = GoogleBooksParser.parseItem(element) else { return result }
-            guard !result.contains(where: { $0.id == item.id }) else { return result }
-            return result + [item]
+    func parseFetchResults(_ fetchResult: Data) throws -> FetchResult? {
+        let result = try jsonDecoder.decode(ItemMetadata.self, from: fetchResult)
+        return FetchResult(result)
+    }
+
+    /**
+    Contains an item's metadata and cover image data
+     */
+    struct FetchResult {
+        let id: String
+        var title: String
+        var authors: [String]
+        var subtitle: String?
+        var description: String?
+        var isbn13: ISBN13?
+        var pageCount: Int?
+        var subjects = [String]()
+        var publisher: String?
+        var language: LanguageIso639_1?
+        var thumbnailImage: URL?
+        var smallImage: URL?
+        var image: Data?
+
+        private static func cleanDescription(_ description: String?) -> String? {
+            // This string may contain some HTML. We want to remove them, but first we might as well replace the "<br>"s with '\n's
+            // and the "<p>"s with "\n\n".
+            return description?.components(separatedBy: "<br>")
+                .map { $0.trimming() }
+                .joined(separator: "\n")
+                .components(separatedBy: "<p>")
+                .flatMap { $0.components(separatedBy: "</p>") }
+                .compactMap { $0.trimming().nilIfWhitespace() }
+                .joined(separator: "\n\n")
+                .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression, range: nil)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        private static func categoriesToSubjects(_ categories: [String]?) -> [String] {
+            return categories?.flatMap { $0.components(separatedBy: "/") }
+                .compactMap { $0.trimming().nilIfWhitespace() }
+                .filter { $0 != "General" }
+                .distinct() ?? []
+        }
+
+        private mutating func initialiseNonSearchResultProperties(_ volumeInfo: ItemMetadata.VolumeInfo) {
+            description = FetchResult.cleanDescription(volumeInfo.description)
+            isbn13 = ISBN13(volumeInfo.industryIdentifiers?.first { $0.type == "ISBN_13" }?.identifier)
+            pageCount = volumeInfo.pageCount
+            subjects = FetchResult.categoriesToSubjects(volumeInfo.categories)
+            publisher = volumeInfo.publisher
+            language = volumeInfo.language
+            thumbnailImage = volumeInfo.imageLinks?.thumbnail?.withHttps()
+            smallImage = volumeInfo.imageLinks?.small?.withHttps()
+        }
+
+        fileprivate init(_ itemMetadata: ItemMetadata, _ searchResult: SearchResult) {
+            assert(itemMetadata.id == searchResult.id)
+            id = searchResult.id
+            title = searchResult.title
+            authors = searchResult.authors
+            subtitle = searchResult.subtitle
+            initialiseNonSearchResultProperties(itemMetadata.volumeInfo)
+        }
+
+        fileprivate init(_ searchResult: SearchResult) {
+            id = searchResult.id
+            title = searchResult.title
+            authors = searchResult.authors
+            subtitle = searchResult.subtitle
+        }
+
+        fileprivate init?(_ itemMetadata: ItemMetadata) {
+            guard let itemTitle = itemMetadata.volumeInfo.title else { return nil }
+            guard let itemAuthors = itemMetadata.volumeInfo.authors, !itemAuthors.isEmpty else { return nil }
+            id = itemMetadata.id
+            title = itemTitle
+            authors = itemAuthors
+            subtitle = itemMetadata.volumeInfo.subtitle
+            initialiseNonSearchResultProperties(itemMetadata.volumeInfo)
         }
     }
 
-    static func parseItem(_ item: JSON) -> SearchResult? {
-        guard let id = item["id"].string, !id.isEmptyOrWhitespace,
-            let title = item["volumeInfo", "title"].string, !title.isEmptyOrWhitespace,
-            let authorsJson = item["volumeInfo", "authors"].array, !authorsJson.isEmpty else { return nil }
-        let authors = authorsJson.compactMap { json -> String? in
-            guard let authorString = json.rawString(), !authorString.isEmptyOrWhitespace else { return nil }
-            return authorString
-        }
-        guard !authors.isEmpty else { return nil }
+    struct SearchResult {
+        let id: String
+        let title: String
+        let authors: [String]
+        let subtitle: String?
+        let isbn13: ISBN13?
+        let thumbnailImage: URL?
 
-        let result = SearchResult(id: id, title: title, authors: authors)
-        result.subtitle = item["volumeInfo", "subtitle"].string
-
-        // Convert the thumbnail URL to HTTPS
-        if let thumbnailUrlString = item["volumeInfo", "imageLinks", "thumbnail"].string,
-            let thumbnailUrl = URL(string: thumbnailUrlString) {
-            var urlComponents = URLComponents(url: thumbnailUrl, resolvingAgainstBaseURL: false)!
-            urlComponents.scheme = "https"
-            result.thumbnailCoverUrl = urlComponents.url
-        }
-        result.isbn13 = item["volumeInfo", "industryIdentifiers"].array?.first {
-            $0["type"].stringValue == "ISBN_13"
-        }?["identifier"].stringValue
-
-        return result
-    }
-
-    static func parseFetchResults(_ fetchResult: JSON, existingSearchResult: SearchResult? = nil) -> FetchResult? {
-
-        // Defer to the common search parsing initially, or use the provided search result
-        guard let searchResult = existingSearchResult ?? GoogleBooksParser.parseItem(fetchResult) else { return nil }
-
-        let result = FetchResult(fromSearchResult: searchResult)
-        result.pageCount = fetchResult["volumeInfo", "pageCount"].int32
-        if let code = fetchResult["volumeInfo"]["language"].string, let language = LanguageIso639_1(rawValue: code) {
-            result.language = language
-        }
-
-        // Note: "Published Date" refers to *this* edition; there doesn't seem to be a way to get the first publication date
-        result.publisher = fetchResult["volumeInfo", "publisher"].string
-
-        result.hasSmallImage = fetchResult["volumeInfo", "imageLinks", "small"].string != nil
-        result.hasThumbnailImage = fetchResult["volumeInfo", "imageLinks", "thumbnail"].string != nil
-
-        // This string may contain some HTML. We want to remove them, but first we might as well replace the "<br>"s with '\n's
-        // and the "<p>"s with "\n\n".
-        var description = fetchResult["volumeInfo", "description"].string
-
-        description = description?.components(separatedBy: "<br>")
-            .map { $0.trimming() }
-            .joined(separator: "\n")
-
-        description = description?.components(separatedBy: "<p>")
-            .flatMap { $0.components(separatedBy: "</p>") }
-            .compactMap { $0.trimming().nilIfWhitespace() }
-            .joined(separator: "\n\n")
-
-        description = description?.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression, range: nil)
-        description = description?.trimmingCharacters(in: .whitespacesAndNewlines)
-        result.description = description
-
-        // Try to get the categories
-        if let subjects = fetchResult["volumeInfo", "categories"].array {
-            result.subjects = subjects.flatMap {
-                $0.stringValue.components(separatedBy: "/").map { $0.trimming() }
-            }.filter { $0 != "General" }.distinct()
-        }
-
-        return result
-    }
-}
-
-class SearchResult {
-    let id: String
-    var title: String
-    var subtitle: String?
-    var authors: [Author]
-    var isbn13: String?
-    var thumbnailCoverUrl: URL?
-
-    init(id: String, title: String, authors: [String]) {
-        self.id = id
-        self.title = title
-        self.authors = authors.map {
-            if let range = $0.range(of: " ", options: .backwards) {
-                let firstNames = $0[..<range.upperBound].trimming()
-                let lastName = $0[range.lowerBound...].trimming()
-                return Author(lastName: lastName, firstNames: firstNames)
+        var titleAndSubtitle: String {
+            if let subtitle = subtitle {
+                return "\(title): \(subtitle)"
             } else {
-                return Author(lastName: $0, firstNames: nil)
+                return title
+            }
+        }
+
+        var authorList: String {
+            authors.joined(separator: ", ")
+        }
+
+        fileprivate init?(_ itemMetadata: ItemMetadata) {
+            id = itemMetadata.id
+            guard let title = itemMetadata.volumeInfo.title else { return nil }
+            self.title = title
+            guard let authors = itemMetadata.volumeInfo.authors, !authors.isEmpty else { return nil }
+            self.authors = authors
+            subtitle = itemMetadata.volumeInfo.subtitle
+            isbn13 = ISBN13(itemMetadata.volumeInfo.industryIdentifiers?.first { $0.type == "ISBN_13" }?.identifier)
+            thumbnailImage = itemMetadata.volumeInfo.imageLinks?.thumbnail?.withHttps()
+        }
+    }
+
+    enum ResponseError: Error {
+        case noResult
+        case invalidResult
+        case invalidUrl
+        case specifiedError(code: Int, message: String)
+    }
+
+    // MARK: Decodable JSON response models
+
+    /**
+     The data returned from a fetch request against Google Books
+     */
+    fileprivate struct ItemMetadata: Decodable {
+        let id: String
+        let volumeInfo: VolumeInfo
+
+        struct VolumeInfo: Decodable {
+            let title: String?
+            let subtitle: String?
+            let authors: [String]?
+            let description: String?
+            let industryIdentifiers: [IndustryIdentifier]?
+            let pageCount: Int?
+            let categories: [String]?
+            let publisher: String?
+            let language: LanguageIso639_1?
+            let imageLinks: ImageLinks?
+
+            struct ImageLinks: Decodable {
+                let thumbnail: URL?
+                let small: URL?
+            }
+
+            struct IndustryIdentifier: Decodable {
+                let type: String
+                let identifier: String
             }
         }
     }
-}
 
-class FetchResult {
-    let id: String
-    var title: String
-    var subtitle: String?
-    var authors = [Author]()
-    var isbn13: ISBN13?
-    var description: String?
-    var publisher: String?
-    var subjects = [String]()
-    var language: LanguageIso639_1?
-    var publishedDate: Date?
-    var pageCount: Int32?
-    var hasThumbnailImage: Bool = false
-    var hasSmallImage: Bool = false
-
-    var coverImage: Data?
-
-    init(fromSearchResult searchResult: SearchResult) {
-        id = searchResult.id
-        title = searchResult.title
-        subtitle = searchResult.subtitle
-        authors = searchResult.authors
-        isbn13 = ISBN13(searchResult.isbn13)
+    /**
+     The metadata returned for a collection of items when searching on Google Books.
+     */
+    fileprivate struct SearchResults: Decodable {
+        let items: [ItemMetadata]?
     }
-}
 
-enum GoogleError: Error {
-    case noResult
-    case missingEssentialData
-    case invalidUrl
-    case specifiedError(code: Int, message: String)
+    /**
+     The description of an error which may be returned by a Google Books response.
+     */
+    fileprivate struct ReportedError: Decodable {
+        struct Details: Decodable {
+            let code: Int
+            let message: String
+        }
+
+        let error: Details
+    }
 }

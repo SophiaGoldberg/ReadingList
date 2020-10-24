@@ -27,7 +27,7 @@ extension UITableViewCell {
         }
         
         if #available(iOS 13.0, *) { } else {
-            defaultInitialise(withTheme: UserDefaults.standard[.theme])
+            defaultInitialise(withTheme: GeneralSettings.theme)
         }
     }
 }
@@ -86,8 +86,8 @@ final class Organize: UITableViewController {
     }
 
     private func sortDescriptors() -> [NSSortDescriptor] {
-        var sortDescriptors = [NSSortDescriptor(\List.custom)]
-        switch UserDefaults.standard[.listSortOrder] {
+        var sortDescriptors = [NSSortDescriptor(\List.name)]
+        switch ListSortOrder.selectedSort {
         case .custom:
             sortDescriptors.append(contentsOf: [NSSortDescriptor(\List.sort), NSSortDescriptor(\List.name)])
         case .alphabetical:
@@ -107,39 +107,40 @@ final class Organize: UITableViewController {
         reloadHeaders()
     }
 
-    func onSortButtonTap(_ button: UIButton) {
-        let alert = UIAlertController.selectOption(ListSortOrder.allCases, title: "Choose Order", selected: UserDefaults.standard[.listSortOrder]) { [weak self] sortOrder in
-            guard let `self` = self else { return }
-            UserDefaults.standard[.listSortOrder] = sortOrder
-            self.dataSource.resultsController.fetchRequest.sortDescriptors = self.sortDescriptors()
-            try! self.dataSource.resultsController.performFetch()
-            self.dataSource.updateData(animate: true)
-        }
-        if let popover = alert.popoverPresentationController {
-            popover.sourceView = button
-            popover.sourceRect = button.bounds
-        }
-        self.present(alert, animated: true)
-    }
-
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         guard !emptyDataSetManager.isShowingEmptyState else { return .leastNonzeroMagnitude }
         return BookTableHeader.height
+    }
+
+    func regenerateHeaderSortButtonMenuOrAlert(_ header: BookTableHeader) {
+        let selectedSort = ListSortOrder.selectedSort
+        header.presenter = self
+        header.alertOrMenu = AlertOrMenu(title: "Choose Order", items: ListSortOrder.allCases.map { sort in
+            AlertOrMenu.Item(title: sort == selectedSort ? "\(sort.description) ✓" : sort.description) { [weak self] in
+                guard let `self` = self else { return }
+                guard ListSortOrder.selectedSort != sort else { return }
+                ListSortOrder.selectedSort = sort
+                self.dataSource.resultsController.fetchRequest.sortDescriptors = self.sortDescriptors()
+                try! self.dataSource.resultsController.performFetch()
+                self.dataSource.updateData(animate: true)
+
+                // Regenerate the header menu so that the menu's ticks appear in the correct place next time
+                self.regenerateHeaderSortButtonMenuOrAlert(header)
+            }
+        })
     }
 
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard !emptyDataSetManager.isShowingEmptyState else { return nil }
         let header = tableView.dequeue(BookTableHeader.self)
         configureHeader(header, at: section)
-        header.onSortButtonTap = { [weak self] button in
-            self?.onSortButtonTap(button)
-        }
+        regenerateHeaderSortButtonMenuOrAlert(header)
         return header
     }
 
     private func renameList(_ list: List, completion: ((Bool) -> Void)? = nil) {
         let existingListNames = List.names(fromContext: PersistentStoreManager.container.viewContext)
-        let renameListAlert = TextBoxAlert(title: "Rename List", message: "Choose a new name for this list", initialValue: list.name, placeholder: "New list name", keyboardAppearance: UserDefaults.standard[.theme].keyboardAppearance, textValidator: { listName in
+        let renameListAlert = TextBoxAlert(title: "Rename List", message: "Choose a new name for this list", initialValue: list.name, placeholder: "New list name", keyboardAppearance: GeneralSettings.theme.keyboardAppearance, textValidator: { listName in
                 guard let listName = listName, !listName.isEmptyOrWhitespace else { return false }
                 return listName == list.name || !existingListNames.contains(listName)
             }, onCancel: {

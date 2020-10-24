@@ -14,10 +14,12 @@ final class Attributions: UITableViewController {
         Attribution("Cosmos", url: "https://github.com/evgenyneu/Cosmos", copyright: "2015 Evgenii Neumerzhitckii", license: .mit),
         Attribution("Eureka", url: "https://github.com/xmartlabs/Eureka", copyright: "2015 XMARTLABS", license: .mit),
         Attribution("Icons8", url: "https://icons8.com", copyright: "Icons8", license: .ccByNd3),
+        Attribution("PersistedPropertyWrapper", url: "https://github.com/AndrewBennet/PersistedPropertyWrapper", copyright: "2020 Andrew Bennet", license: .mit),
         Attribution("Promises", url: "https://github.com/google/promises", copyright: "2018 Google Inc", license: .apache2),
-        Attribution("SwiftyJSON", url: "https://github.com/SwiftyJSON/SwiftyJSON", copyright: "2016 Ruoyu Fu", license: .mit),
+        Attribution("Regex", url: "https://github.com/sharplet/Regex", copyright: "2015 Adam Sharp", license: .mit),
         Attribution("SwiftyStoreKit", url: "https://github.com/bizz84/SwiftyStoreKit", copyright: "2015-2017 Andrea Bizzotto", license: .mit),
-        Attribution("SVProgressHUD", url: "https://github.com/SVProgressHUD/SVProgressHUD", copyright: "2011-2018 Sam Vermette, Tobias Tiemerding and contributors", license: .mit)
+        Attribution("SVProgressHUD", url: "https://github.com/SVProgressHUD/SVProgressHUD", copyright: "2011-2018 Sam Vermette, Tobias Tiemerding and contributors", license: .mit),
+        Attribution("WhatsNewKit", url: "https://github.com/SvenTiigi/WhatsNewKit", copyright: "2020 Sven Tiigi", license: .mit)
     ]
 
     override func numberOfSections(in tableView: UITableView) -> Int { return 2 }
@@ -43,7 +45,7 @@ final class Attributions: UITableViewController {
             let cell = tableView.dequeueReusableCell(withIdentifier: "Basic", for: indexPath)
             guard let textLabel = cell.textLabel else { preconditionFailure() }
             if #available(iOS 13.0, *) { } else {
-                cell.defaultInitialise(withTheme: UserDefaults.standard[.theme])
+                cell.defaultInitialise(withTheme: GeneralSettings.theme)
             }
             textLabel.text = """
             Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated \
@@ -64,7 +66,7 @@ final class Attributions: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Attribution", for: indexPath)
         guard let textLabel = cell.textLabel, let detailTextLabel = cell.detailTextLabel else { preconditionFailure() }
         if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: UserDefaults.standard[.theme])
+            cell.defaultInitialise(withTheme: GeneralSettings.theme)
         }
 
         let attribution = attributions[indexPath.row]

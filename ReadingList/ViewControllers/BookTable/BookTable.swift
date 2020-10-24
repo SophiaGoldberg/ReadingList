@@ -97,7 +97,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         return readStates.appendingRemaining(BookReadState.allCases).map { readState in
             let fetchRequest = NSManagedObject.fetchRequest(Book.self, batch: 25)
             fetchRequest.predicate = NSPredicate(boolean: false)
-            fetchRequest.sortDescriptors = UserDefaults.standard[UserSettingsCollection.sortSetting(for: readState)].bookSortDescriptors
+            fetchRequest.sortDescriptors = BookSort.byReadState[readState]!.bookSortDescriptors
             let controller = NSFetchedResultsController<Book>(fetchRequest: fetchRequest, managedObjectContext: PersistentStoreManager.container.viewContext,
                                                               sectionNameKeyPath: #keyPath(Book.readState), cacheName: nil)
             return (readState, controller)
@@ -154,6 +154,11 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
 
             try! self.dataSource.performFetch()
             self.dataSource.updateData(animate: true)
+
+            if #available(iOS 14.0, *) {
+                // Change of sort order may result in changed data shared with the widget, so reload.
+                BookDataSharer.instance.handleChanges()
+            }
             UserEngagement.logEvent(.changeSortOrder)
         }
         configureHeader(header, at: section)
@@ -183,22 +188,48 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         if isEditing {
             // If we're editing, the right button should become an "edit action" button, but be disabled until any books are selected
             leftButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(toggleEditingAnimated))
-            rightButton = UIBarButtonItem(image: #imageLiteral(resourceName: "MoreFilledIcon"), style: .plain, target: self, action: #selector(editActionButtonPressed(_:)))
+
+            let rightButtonImage = UIImage(ifAvailable: ImageNames.navigationBarMore) ?? #imageLiteral(resourceName: "MoreFilledIcon")
+            if #available(iOS 14.0, *) {
+                rightButton = UIBarButtonItem(image: rightButtonImage, menu: buildEditAction().menu())
+            } else {
+                rightButton = UIBarButtonItem(image: rightButtonImage, style: .plain, target: self, action: #selector(editActionButtonPressed(_:)))
+            }
             rightButton.isEnabled = false
         } else {
             // If we're not editing, the right button should revert back to being an Add button
             leftButton = emptyStateManager.isShowingEmptyState ? nil : UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(toggleEditingAnimated))
-            rightButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addWasPressed(_:)))
+            if #available(iOS 14.0, *) {
+                rightButton = UIBarButtonItem(systemItem: .add, menu: addButtonAction.menu())
+            } else {
+                rightButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addWasPressed(_:)))
+            }
         }
 
         navigationItem.leftBarButtonItem = leftButton
         navigationItem.rightBarButtonItem = rightButton
     }
 
+    lazy var addButtonAction = AlertOrMenu(title: "Add New Book", items: [
+        AlertOrMenu.Item(title: "Scan Barcode", image: UIImage(ifAvailable: ImageNames.scanBarcode)) {
+            self.present(UIStoryboard.ScanBarcode.rootAsFormSheet(), animated: true, completion: nil)
+        },
+        AlertOrMenu.Item(title: "Search Online", image: UIImage(ifAvailable: ImageNames.searchOnline)) {
+            self.present(UIStoryboard.SearchOnline.rootAsFormSheet(), animated: true, completion: nil)
+        },
+        AlertOrMenu.Item(title: "Add Manually", image: UIImage(ifAvailable: ImageNames.addBookManually)) {
+            self.present(EditBookMetadata(bookToCreateReadState: .toRead).inThemedNavController(), animated: true, completion: nil)
+        }
+    ])
+
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if isEditing {
             guard let selectedRows = tableView.indexPathsForSelectedRows else { return }
             navigationItem.rightBarButtonItem!.isEnabled = true
+            if #available(iOS 14.0, *) {
+                // Regenerate the menu since the items are dynamic and depend on the selected rows
+                navigationItem.rightBarButtonItem!.menu = buildEditAction().menu()
+            }
             navigationItem.title = "\(selectedRows.count) Selected"
         } else {
             guard let selectedCell = tableView.cellForRow(at: indexPath) else { return }
@@ -214,6 +245,10 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         } else {
             navigationItem.rightBarButtonItem!.isEnabled = false
             navigationItem.title = readStates.last!.description
+        }
+        if #available(iOS 14.0, *) {
+            // Regenerate the menu since the items are dynamic and depend on the selected rows
+            navigationItem.rightBarButtonItem!.menu = buildEditAction().menu()
         }
     }
 
@@ -236,32 +271,32 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         return UIContextMenuConfiguration(identifier: book.objectID, previewProvider: previewProvider) { _ in
             // Fist set up the set of menu items which are always returned
             var menuItems: [UIMenuElement] = [
-                UIAction(title: "Update Notes", image: UIImage(systemName: "text.bubble")) { _ in
+                UIAction(title: "Update Notes", image: UIImage(systemName: ImageNames.updateNotes)) { _ in
                     self.present(EditBookNotes(existingBookID: book.objectID).inNavigationController(), animated: true)
                 },
-                UIAction(title: "Manage Lists", image: UIImage(systemName: "tray.2")) { _ in
+                UIAction(title: "Manage Lists", image: UIImage(systemName: ImageNames.manageLists)) { _ in
                     self.present(ManageLists.getAppropriateVcForManagingLists([book]), animated: true)
                 },
-                UIAction(title: "Edit Book", image: UIImage(systemName: "square.and.pencil")) { _ in
+                UIAction(title: "Edit Book", image: UIImage(systemName: ImageNames.editBook)) { _ in
                     self.present(EditBookMetadata(bookToEditID: book.objectID).inNavigationController(), animated: true)
                 },
-                UIAction(title: "Manage Log", image: UIImage(systemName: "calendar")) { _ in
+                UIAction(title: "Manage Log", image: UIImage(systemName: ImageNames.manageLog)) { _ in
                     self.present(EditBookReadState(existingBookID: self.dataSource.object(at: indexPath).objectID).inNavigationController(), animated: true)
                 },
-                UIAction(title: "Delete", image: UIImage(systemName: "trash.fill"), attributes: .destructive) { _ in
-                    let confirm = self.confirmDeleteAlert(indexPaths: [indexPath])
-                    confirm.popoverPresentationController?.setSourceCell(atIndexPath: indexPath, inTable: tableView)
-                    self.present(confirm, animated: true)
-                }
+                UIMenu(title: "Delete", image: UIImage(systemName: ImageNames.delete), options: .destructive, children: [
+                    UIAction(title: "Confirm Delete", image: UIImage(systemName: ImageNames.delete), attributes: .destructive) { _ in
+                        self.deleteBooks(indexPaths: [indexPath])
+                    }
+                ])
             ]
 
             // If book ordering can be edited, then add actions to move this book to the top or bottom.
-            if UserDefaults.standard[.sortSetting(for: book.readState)] == .custom {
+            if BookSort.byReadState[book.readState] == .custom {
                 let minSort = Book.minSort(with: book.readState, from: PersistentStoreManager.container.viewContext)
                 let maxSort = Book.maxSort(with: book.readState, from: PersistentStoreManager.container.viewContext)
                 var moveUpOrDownActions = [UIMenuElement]()
                 if let minSort = minSort, book.sort != minSort {
-                    moveUpOrDownActions.append(UIAction(title: "Move To Top", image: UIImage(systemName: "arrow.up")) { _ in
+                    moveUpOrDownActions.append(UIAction(title: "Move To Top", image: UIImage(systemName: ImageNames.moveUp)) { _ in
                         guard let context = book.managedObjectContext else { return }
                         UserEngagement.logEvent(.moveBookToTop)
                         book.sort = minSort - 1
@@ -269,7 +304,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
                     })
                 }
                 if let maxSort = maxSort, book.sort != maxSort {
-                    moveUpOrDownActions.append(UIAction(title: "Move To Bottom", image: UIImage(systemName: "arrow.down")) { _ in
+                    moveUpOrDownActions.append(UIAction(title: "Move To Bottom", image: UIImage(systemName: ImageNames.moveDown)) { _ in
                         guard let context = book.managedObjectContext else { return }
                         UserEngagement.logEvent(.moveBookToBottom)
                         book.sort = maxSort + 1
@@ -281,13 +316,13 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
                 if moveUpOrDownActions.count == 1 {
                     menuItems.insert(moveUpOrDownActions[0], at: 0)
                 } else {
-                    menuItems.insert(UIMenu(title: "Move...", image: UIImage(systemName: "arrow.up.arrow.down"), children: moveUpOrDownActions), at: 0)
+                    menuItems.insert(UIMenu(title: "Move...", image: UIImage(systemName: ImageNames.moveUpOrDown), children: moveUpOrDownActions), at: 0)
                 }
             }
 
             // Add an action to move the book's read state, if suitable
             if book.readState == .toRead {
-                menuItems.insert(UIAction(title: "Start", image: UIImage(systemName: "play")) { _ in
+                menuItems.insert(UIAction(title: "Start", image: UIImage(systemName: ImageNames.startBookPlay)) { _ in
                     guard let context = book.managedObjectContext else { return }
                     UserEngagement.logEvent(.transitionReadState)
                     book.setReading(started: Date())
@@ -295,7 +330,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
                     context.saveAndLogIfErrored()
                 }, at: 0)
             } else if book.readState == .reading {
-                menuItems.insert(UIAction(title: "Finish", image: UIImage(systemName: "checkmark")) { _ in
+                menuItems.insert(UIAction(title: "Finish", image: UIImage(systemName: ImageNames.finishBookCheckmark)) { _ in
                     guard let context = book.managedObjectContext, let started = book.startedReading else { return }
                     UserEngagement.logEvent(.transitionReadState)
                     book.setFinished(started: started, finished: Date())
@@ -334,62 +369,96 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         }
     }
 
-    @objc private func editActionButtonPressed(_ sender: UIBarButtonItem) {
+    private func presentManageSelectedBooksLists() {
         guard let selectedRows = tableView.indexPathsForSelectedRows, !selectedRows.isEmpty else { return }
-        let selectedReadStates = selectedRows.map { dataSource.readState(forSection: $0.section) }.distinct()
+        self.present(ManageLists.getAppropriateVcForManagingLists(selectedRows.map(self.dataSource.object)) {
+            self.setEditing(false, animated: true)
+            UserEngagement.logEvent(.bulkAddBookToList)
+            UserEngagement.onReviewTrigger()
+        }, animated: true)
+    }
 
-        let optionsAlert = UIAlertController(title: "Edit \(selectedRows.count) book\(selectedRows.count == 1 ? "" : "s")", message: nil, preferredStyle: .actionSheet)
-        optionsAlert.addAction(UIAlertAction(title: "Manage Lists", style: .default) { _ in
-            self.present(ManageLists.getAppropriateVcForManagingLists(selectedRows.map(self.dataSource.object)) {
+    private func startOrFinishSelectedBooks(shouldStart: Bool) {
+        guard let selectedRows = tableView.indexPathsForSelectedRows, !selectedRows.isEmpty else { return }
+
+        // We need to manage the sort indices manually, since we will be saving the batch operation at once
+        let bookSortManager = BookSortIndexManager(context: PersistentStoreManager.container.viewContext,
+                                                   readState: shouldStart ? .reading : .finished)
+        for book in selectedRows.map(self.dataSource.object) {
+            if shouldStart {
+                book.setReading(started: Date())
+            } else if let started = book.startedReading {
+                book.setFinished(started: started, finished: Date())
+            }
+            book.sort = bookSortManager.getAndIncrementSort()
+        }
+        PersistentStoreManager.container.viewContext.saveIfChanged()
+        self.setEditing(false, animated: true)
+        UserEngagement.logEvent(.bulkEditReadState)
+
+        // Only request a review if this was a Start tap: there have been a bunch of reviews
+        // on the app store which are for books, not for the app!
+        if shouldStart {
+            UserEngagement.onReviewTrigger()
+        }
+    }
+
+    private func presentConfirmDeleteSelectedBooks(_ sender: UIBarButtonItem) {
+        guard let selectedRows = tableView.indexPathsForSelectedRows, !selectedRows.isEmpty else { return }
+
+        let confirm = self.confirmDeleteAlert(indexPaths: selectedRows) { didDelete in
+            // Once the deletion has happened, switch editing mode off. Do this on the next run loop to avoid
+            // messing with the row deletion animations
+            guard didDelete else { return }
+            DispatchQueue.main.async {
                 self.setEditing(false, animated: true)
-                UserEngagement.logEvent(.bulkAddBookToList)
-                UserEngagement.onReviewTrigger()
-            }, animated: true)
-        })
+            }
+        }
+        confirm.popoverPresentationController?.barButtonItem = sender
+        self.present(confirm, animated: true)
+    }
 
-        if let initialSelectionReadState = selectedReadStates.first, initialSelectionReadState != .finished, selectedReadStates.count == 1 {
-            let title = (initialSelectionReadState == .toRead ? "Start" : "Finish") + (selectedRows.count > 1 ? " All" : "")
-            optionsAlert.addAction(UIAlertAction(title: title, style: .default) { _ in
+    private func buildEditAction() -> AlertOrMenu {
+        func buildEditActionItems() -> [AlertOrMenu.Item] {
+            guard let selectedRows = self.tableView.indexPathsForSelectedRows, !selectedRows.isEmpty else { return [] }
+            let selectedReadStates = selectedRows.map { self.dataSource.readState(forSection: $0.section) }.distinct()
 
-                // We need to manage the sort indices manually, since we will be saving the batch operation at once
-                let bookSortManager = BookSortIndexManager(context: PersistentStoreManager.container.viewContext,
-                                                           readState: initialSelectionReadState == .toRead ? .reading : .finished)
-                for book in selectedRows.map(self.dataSource.object) {
-                    if initialSelectionReadState == .toRead {
-                        book.setReading(started: Date())
-                    } else if let started = book.startedReading {
-                        book.setFinished(started: started, finished: Date())
+            var items = [AlertOrMenu.Item(title: "Manage Lists", image: UIImage(ifAvailable: ImageNames.manageLists)) {
+                self.presentManageSelectedBooksLists()
+            }]
+            if let initialSelectionReadState = selectedReadStates.first, initialSelectionReadState != .finished, selectedReadStates.count == 1 {
+                let title = initialSelectionReadState == .toRead ? "Start Selected" : "Finish Selected"
+                let image = UIImage(ifAvailable: initialSelectionReadState == .toRead ? ImageNames.startBookPlay : ImageNames.finishBookCheckmark)
+                items.append(AlertOrMenu.Item(title: title, image: image) {
+                    self.startOrFinishSelectedBooks(shouldStart: initialSelectionReadState == .toRead)
+                })
+            }
+            let confirmDelete = AlertOrMenu(title: nil, items: [
+                AlertOrMenu.Item(title: "Confirm Delete", image: UIImage(ifAvailable: ImageNames.delete), destructive: true) { [weak self] in
+                    guard let `self` = self else { return }
+                    self.deleteBooks(indexPaths: selectedRows)
+                    // Once the deletion has happened, switch editing mode off. Do this on the next run loop to avoid
+                    // messing with the row deletion animations
+                    DispatchQueue.main.async {
+                        self.setEditing(false, animated: true)
                     }
-                    book.sort = bookSortManager.getAndIncrementSort()
                 }
-                PersistentStoreManager.container.viewContext.saveIfChanged()
-                self.setEditing(false, animated: true)
-                UserEngagement.logEvent(.bulkEditReadState)
-
-                // Only request a review if this was a Start tap: there have been a bunch of reviews
-                // on the app store which are for books, not for the app!
-                if initialSelectionReadState == .toRead {
-                    UserEngagement.onReviewTrigger()
-                }
+            ])
+            items.append(AlertOrMenu.Item(title: "Delete Selected", image: UIImage(ifAvailable: ImageNames.delete), destructive: true, childAlertOrMenu: confirmDelete) { [weak self] secondaryAlert in
+                secondaryAlert.popoverPresentationController?.barButtonItem = self?.navigationItem.rightBarButtonItem
+                self?.present(secondaryAlert, animated: true)
             })
+            return items
         }
 
-        optionsAlert.addAction(UIAlertAction(title: "Delete\(selectedRows.count > 1 ? " All" : "")", style: .destructive) { _ in
-            let confirm = self.confirmDeleteAlert(indexPaths: selectedRows) { didDelete in
-                // Once the deletion has happened, switch editing mode off. Do this on the next run loop to avoid
-                // messing with the row deletion animations
-                guard didDelete else { return }
-                DispatchQueue.main.async {
-                    self.setEditing(false, animated: true)
-                }
-            }
-            confirm.popoverPresentationController?.barButtonItem = sender
-            self.present(confirm, animated: true)
-        })
-        optionsAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-        optionsAlert.popoverPresentationController?.barButtonItem = sender
+        return AlertOrMenu(title: nil, items: buildEditActionItems())
+    }
 
-        present(optionsAlert, animated: true, completion: nil)
+    @available(iOS, obsoleted: 14.0)
+    @objc private func editActionButtonPressed(_ sender: UIBarButtonItem) {
+        let alert = buildEditAction().actionSheet()
+        alert.popoverPresentationController?.barButtonItem = sender
+        present(alert, animated: true)
     }
 
     func simulateBookSelection(_ bookID: NSManagedObjectID, allowTableObscuring: Bool = true) {
@@ -442,28 +511,18 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         }
     }
 
+    @available(iOS, obsoleted: 14.0)
     @IBAction private func addWasPressed(_ sender: UIBarButtonItem) {
-        let optionsAlert = UIAlertController(title: "Add New Book", message: nil, preferredStyle: .actionSheet)
-        optionsAlert.addAction(UIAlertAction(title: "Scan Barcode", style: .default) { _ in
-            self.present(UIStoryboard.ScanBarcode.rootAsFormSheet(), animated: true, completion: nil)
-        })
-        optionsAlert.addAction(UIAlertAction(title: "Search Online", style: .default) { _ in
-            self.present(UIStoryboard.SearchOnline.rootAsFormSheet(), animated: true, completion: nil)
-        })
-        optionsAlert.addAction(UIAlertAction(title: "Add Manually", style: .default) { _ in
-            self.present(EditBookMetadata(bookToCreateReadState: .toRead).inThemedNavController(), animated: true, completion: nil)
-        })
-        optionsAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        let optionsAlert = addButtonAction.actionSheet()
         optionsAlert.popoverPresentationController?.barButtonItem = sender
-
         present(optionsAlert, animated: true, completion: nil)
     }
 
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let moreImage, deleteImage: UIImage
         if #available(iOS 13.0, *) {
-            moreImage = UIImage(systemName: "ellipsis.circle.fill")!
-            deleteImage = UIImage(systemName: "trash.fill")!
+            moreImage = UIImage(systemName: ImageNames.moreEllipsis)!
+            deleteImage = UIImage(systemName: ImageNames.delete)!
         } else {
             moreImage = #imageLiteral(resourceName: "More")
             deleteImage = #imageLiteral(resourceName: "Trash")
@@ -501,12 +560,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
     }
 
     override func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let logImage: UIImage
-        if #available(iOS 13.0, *) {
-            logImage = UIImage(systemName: "calendar")!
-        } else {
-            logImage = #imageLiteral(resourceName: "Timetable")
-        }
+        let logImage = UIImage(ifAvailable: ImageNames.manageLog) ?? #imageLiteral(resourceName: "Timetable")
         var actions = [UIContextualAction(style: .normal, title: "Log", image: logImage) { _, _, callback in
             self.present(EditBookReadState(existingBookID: self.dataSource.object(at: indexPath).objectID).inThemedNavController(), animated: true)
             callback(true)
@@ -544,14 +598,20 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
             }
         }
         leadingSwipeAction.backgroundColor = readStateOfSection == .toRead ? UIColor(.buttonBlue) : UIColor(.buttonGreen)
-        if #available(iOS 13.0, *) {
-            leadingSwipeAction.image = UIImage(systemName: readStateOfSection == .toRead ? "play.fill" : "checkmark")
+        if readStateOfSection == .toRead {
+            leadingSwipeAction.image = UIImage(ifAvailable: ImageNames.startBookPlay) ?? #imageLiteral(resourceName: "Play")
         } else {
-            leadingSwipeAction.image = readStateOfSection == .toRead ? #imageLiteral(resourceName: "Play") : #imageLiteral(resourceName: "Complete")
+            leadingSwipeAction.image = UIImage(ifAvailable: ImageNames.finishBookCheckmark) ?? #imageLiteral(resourceName: "Complete")
         }
         actions.insert(leadingSwipeAction, at: 0)
 
         return UISwipeActionsConfiguration(actions: actions)
+    }
+
+    private func deleteBooks(indexPaths: [IndexPath]) {
+        indexPaths.map(self.dataSource.object).forEach { $0.delete() }
+        PersistentStoreManager.container.viewContext.saveAndLogIfErrored()
+        UserEngagement.logEvent(indexPaths.count > 1 ? .bulkDeleteBook : .deleteBook)
     }
 
     func confirmDeleteAlert(indexPaths: [IndexPath], callback: ((Bool) -> Void)? = nil) -> UIAlertController {
@@ -560,9 +620,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
             callback?(false)
         })
         confirmDeleteAlert.addAction(UIAlertAction(title: "Delete", style: .destructive) { _ in
-            indexPaths.map(self.dataSource.object).forEach { $0.delete() }
-            PersistentStoreManager.container.viewContext.saveAndLogIfErrored()
-            UserEngagement.logEvent(indexPaths.count > 1 ? .bulkDeleteBook : .deleteBook)
+            self.deleteBooks(indexPaths: indexPaths)
             callback?(true)
         })
         return confirmDeleteAlert

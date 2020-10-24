@@ -47,7 +47,7 @@ final class EditBookReadState: FormViewController {
                     self.updateBookFromForm()
                 }
             }
-            <<< DateRow(startedReadingKey) {
+            <<< DateInlineRow(startedReadingKey) {
                 $0.title = "Started"
                 $0.value = book.startedReading ?? now
                 $0.onChange { [unowned self] _ in
@@ -57,7 +57,7 @@ final class EditBookReadState: FormViewController {
                     (form.rowBy(tag: self.readStateKey) as! SegmentedRow<BookReadState>).value == .toRead
                 }
             }
-            <<< DateRow(finishedReadingKey) {
+            <<< DateInlineRow(finishedReadingKey) {
                 $0.title = "Finished"
                 $0.value = book.finishedReading ?? now
                 $0.onChange { [unowned self] _ in
@@ -75,7 +75,7 @@ final class EditBookReadState: FormViewController {
             <<< SegmentedRow<ProgressType>(progressTypeKey) {
                 $0.title = "Type  "
                 $0.options = [.page, .percentage]
-                $0.value = book.currentPage == nil && book.currentPercentage == nil ? UserDefaults.standard[.defaultProgressType] : book.progressAuthority
+                $0.value = book.currentPage == nil && book.currentPercentage == nil ? GeneralSettings.defaultProgressType : book.progressAuthority
                 $0.onChange { [unowned self] row in
                     guard let type = row.value else { return }
                     self.updateProgressFromForm(type)
@@ -122,13 +122,21 @@ final class EditBookReadState: FormViewController {
 
         // If we are editing a book (not adding one), pre-select the current page field
         if self.book.readState == .reading && self.book.changedValues().isEmpty {
-            guard let progressRow = [progressPageKey, progressPercentageKey].map({
-                self.form.rowBy(tag: $0) as! Int32Row
-            }).first(where: { !$0.isHidden }) else {
+            guard
+                let progressRow = [progressPageKey, progressPercentageKey].map({
+                    self.form.rowBy(tag: $0) as! Int32Row
+                }).first(where: { !$0.isHidden }),
+                let textField = progressRow.cell.textField
+            else {
                 assertionFailure("Neither percentage nor page visible")
                 return
             }
-            progressRow.cell.textField.becomeFirstResponder()
+
+            textField.becomeFirstResponder()
+            textField.selectedTextRange = textField.textRange(
+                from: textField.beginningOfDocument,
+                to: textField.endOfDocument
+            )
         }
     }
 
@@ -141,12 +149,12 @@ final class EditBookReadState: FormViewController {
         case .toRead:
             book.setToRead()
         case .reading:
-            book.setReading(started: (form.rowBy(tag: startedReadingKey) as! DateRow).value ?? Date())
+            book.setReading(started: (form.rowBy(tag: startedReadingKey) as! DateInlineRow).value ?? Date())
             guard let progressType = (form.rowBy(tag: progressTypeKey) as! SegmentedRow<ProgressType>).value else { return }
             updateProgressFromForm(progressType)
         case .finished:
-            book.setFinished(started: (form.rowBy(tag: startedReadingKey) as! DateRow).value ?? Date(),
-                             finished: (form.rowBy(tag: finishedReadingKey) as! DateRow).value ?? Date())
+            book.setFinished(started: (form.rowBy(tag: startedReadingKey) as! DateInlineRow).value ?? Date(),
+                             finished: (form.rowBy(tag: finishedReadingKey) as! DateInlineRow).value ?? Date())
         }
     }
 
@@ -183,7 +191,12 @@ final class EditBookReadState: FormViewController {
                 self.dismiss(animated: true)
             })
             confirmExit.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-            confirmExit.popoverPresentationController?.barButtonItem = navigationItem.leftBarButtonItem
+            if let popover = confirmExit.popoverPresentationController {
+                guard let barButtonItem = navigationItem.leftBarButtonItem ?? navigationItem.rightBarButtonItem else {
+                    preconditionFailure("Missing navigation bar button item")
+                }
+                popover.barButtonItem = barButtonItem
+            }
             present(confirmExit, animated: true, completion: nil)
             return
         }
@@ -203,7 +216,7 @@ final class EditBookReadState: FormViewController {
         // online search (after tapping the detail button), since we are unable to determine whether the language
         // currently set in the book is equal to what was present in the search result. This is acceptable for now.
         if let language = book.language, book.manualBookId != nil && newBook {
-            UserDefaults.standard[.lastSelectedLanguage] = language
+            LightweightDataStore.lastSelectedLanguage = language
         }
         editContext.saveIfChanged()
 

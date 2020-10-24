@@ -12,12 +12,13 @@ final class EditBookMetadata: FormViewController {
     private var book: Book!
     private var isAddingNewBook: Bool!
     var isInNavigationFlow = false
+    let googleBooksApi = GoogleBooksApi()
 
     private var shouldPrepopulateLastLanguageSelection: Bool {
         // We want to prepopulate the last selected language only if we are adding a new manual book: we don't want to
         // automatically alter the metadata of a Google Search result, or set the language of a book being edited which
         // happens to not have a language set.
-        return UserDefaults.standard[.prepopulateLastLanguageSelection] && isAddingNewBook && book.googleBooksId == nil
+        return GeneralSettings.prepopulateLastLanguageSelection && isAddingNewBook && book.googleBooksId == nil
     }
 
     convenience init(bookToEditID: NSManagedObjectID) {
@@ -46,21 +47,6 @@ final class EditBookMetadata: FormViewController {
         self.isInNavigationFlow = true
     }
 
-    let isbnRowKey = "isbn"
-    let deleteRowKey = "delete"
-    let updateFromGoogleRowKey = "updateFromGoogle"
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // Workaround bug https://stackoverflow.com/a/47839657/5513562
-        if #available(iOS 11.2, *) {
-            if #available(iOS 11.3, *) { /* Bug resolved in iOS 11.3 */ } else {
-                navigationController!.navigationBar.tintAdjustmentMode = .normal
-                navigationController!.navigationBar.tintAdjustmentMode = .automatic
-            }
-        }
-    }
-
     override func viewDidLoad() { //swiftlint:disable:this cyclomatic_complexity
         super.viewDidLoad()
 
@@ -71,7 +57,7 @@ final class EditBookMetadata: FormViewController {
 
         // Prepopulate last selected language, if appropriate to do so. Do this before the configuration of the form so that the form is accurate
         if shouldPrepopulateLastLanguageSelection {
-            book.language = UserDefaults.standard[.lastSelectedLanguage]
+            book.language = LightweightDataStore.lastSelectedLanguage
         }
 
         // General approach regarding capturing references to `self`:
@@ -87,7 +73,11 @@ final class EditBookMetadata: FormViewController {
                 $0.value = self.book.title
                 $0.onChange { [weak self] cell in
                     guard let `self` = self else { return }
-                    self.book.title = cell.value ?? ""
+                    if let cellValue = cell.value {
+                        self.book.title = cellValue
+                    } else {
+                        self.book.setValue(nil, forKey: #keyPath(Book.title))
+                    }
                 }
             }
 
@@ -134,7 +124,7 @@ final class EditBookMetadata: FormViewController {
                     }
                 }
             }
-            <<< DateRow {
+            <<< DateInlineRow {
                 $0.title = "Publication Date"
                 $0.value = book.publicationDate
                 $0.onChange { [weak self] cell in
@@ -142,7 +132,6 @@ final class EditBookMetadata: FormViewController {
                     self.book.publicationDate = cell.value
                 }
             }
-
             <<< TextRow {
                 $0.cell.textField.autocapitalizationType = .words
                 $0.title = "Publisher"
@@ -161,7 +150,7 @@ final class EditBookMetadata: FormViewController {
                     if #available(iOS 13.0, *) {
                         cell.textLabel!.textColor = .label
                     } else {
-                        cell.textLabel!.textColor = UserDefaults.standard[.theme].titleTextColor
+                        cell.textLabel!.textColor = GeneralSettings.theme.titleTextColor
                     }
                     cell.accessoryType = .disclosureIndicator
                     cell.detailTextLabel?.text = self.book.subjects.map { $0.name }.sorted().joined(separator: ", ")
@@ -174,13 +163,14 @@ final class EditBookMetadata: FormViewController {
             <<< ImageRow {
                 $0.title = "Cover Image"
                 $0.cell.height = { 100 }
+                $0.sourceTypes = [.Camera, .PhotoLibrary]
                 $0.value = UIImage(optionalData: self.book.coverImage)
                 $0.onChange { [weak self] cell in
                     guard let `self` = self else { return }
                     self.book.coverImage = cell.value?.jpegData(compressionQuality: 0.7)
                 }
             }
-            <<< Int64Row(isbnRowKey) {
+            <<< Int64Row {
                 $0.title = "ISBN-13"
                 $0.value = book.isbn13
                 $0.formatter = nil
@@ -210,15 +200,15 @@ final class EditBookMetadata: FormViewController {
 
             // Update and delete buttons
             +++ Section()
-            <<< ButtonRow(updateFromGoogleRowKey) {
+            <<< ButtonRow {
                 $0.title = "Update from Google Books"
-                $0.hidden = Condition(booleanLiteral: isAddingNewBook || self.book.googleBooksId == nil)
+                $0.hidden = Condition(booleanLiteral: isAddingNewBook || book.isbn13 == nil)
                 $0.onCellSelection { [weak self] cell, row in
                     guard let `self` = self else { return }
                     self.updateFromGooglePressed(cell: cell, row: row)
                 }
             }
-            <<< ButtonRow(deleteRowKey) {
+            <<< ButtonRow {
                 $0.title = "Delete"
                 $0.cellSetup { cell, _ in
                     cell.tintColor = .systemRed
@@ -239,6 +229,10 @@ final class EditBookMetadata: FormViewController {
                     guard let `self` = self else { return }
                     self.book.sort = cell.value ?? 0
                 }
+            }
+            <<< LabelRow {
+                $0.title = "Core Data ID"
+                $0.value = book.objectID.uriRepresentation().absoluteString
             }
             <<< LabelRow {
                 $0.title = "Manual Book ID"
@@ -303,18 +297,47 @@ final class EditBookMetadata: FormViewController {
         self.present(confirmDeleteAlert, animated: true, completion: nil)
     }
 
-    func updateFromGooglePressed(cell: ButtonCellOf<String>, row: _ButtonRowOf<String>) {
+    private func confirmUpdateAlert(updateHandler: ((UIAlertAction) -> Void)?) -> UIAlertController {
         let areYouSure = UIAlertController(title: "Confirm Update", message: "Updating from Google Books will overwrite any book metadata changes you have made manually. Are you sure you wish to proceed?", preferredStyle: .alert)
-        areYouSure.addAction(UIAlertAction(title: "Update", style: .default, handler: updateBookFromGoogleHandler))
+        areYouSure.addAction(UIAlertAction(title: "Update", style: .default, handler: updateHandler))
         areYouSure.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-        present(areYouSure, animated: true)
+        return areYouSure
+    }
+
+    func updateFromGooglePressed(cell: ButtonCellOf<String>, row: _ButtonRowOf<String>) {
+        if self.book.googleBooksId != nil {
+            present(confirmUpdateAlert(updateHandler: updateBookFromGoogleHandler(_:)), animated: true)
+        } else if let isbn = book.isbn13 {
+            SVProgressHUD.show(withStatus: "Searching...")
+            UserEngagement.logEvent(.searchForExistingBookByIsbn)
+
+            googleBooksApi.fetch(isbn: isbn.string)
+                .always(on: .main) {
+                    SVProgressHUD.dismiss()
+                }
+                .catch(on: .main) {
+                    switch $0 {
+                    case GoogleBooksApi.ResponseError.noResult:
+                        SVProgressHUD.showInfo(withStatus: "No results found online")
+                    default:
+                        SVProgressHUD.showError(withStatus: "An error occurred searching online")
+                    }
+                }
+                .then(on: .main) { [weak self] fetchResult in
+                    guard let `self` = self else { return }
+                    self.present(self.confirmUpdateAlert { _ in
+                        self.updateBookFromGoogle(fetchResult: fetchResult)
+                    }, animated: true)
+                }
+        }
     }
 
     func updateBookFromGoogleHandler(_: UIAlertAction) {
         guard let googleBooksId = book.googleBooksId else { return }
         SVProgressHUD.show(withStatus: "Downloading...")
+        UserEngagement.logEvent(.updateBookFromGoogle)
 
-        GoogleBooks.fetch(googleBooksId: googleBooksId)
+        googleBooksApi.fetch(googleBooksId: googleBooksId)
             .always(on: .main) {
                 SVProgressHUD.dismiss()
             }
@@ -324,12 +347,16 @@ final class EditBookMetadata: FormViewController {
             .then(on: .main, updateBookFromGoogle)
     }
 
-    func updateBookFromGoogle(fetchResult: FetchResult) {
+    func updateBookFromGoogle(fetchResult: GoogleBooksApi.FetchResult) {
         book.populate(fromFetchResult: fetchResult)
-        editBookContext.saveIfChanged()
-        dismiss(animated: true) {
-            // FUTURE: Would be nice to display whether any changes were made
-            SVProgressHUD.showInfo(withStatus: "Book updated")
+        if book.isValidForUpdate() {
+            editBookContext.saveIfChanged()
+            dismiss(animated: true) {
+                // FUTURE: Would be nice to display whether any changes were made
+                SVProgressHUD.showInfo(withStatus: "Book updated")
+            }
+        } else {
+            SVProgressHUD.showError(withStatus: "Could not update book details")
         }
     }
 
@@ -338,14 +365,32 @@ final class EditBookMetadata: FormViewController {
     }
 
     @objc func userDidCancel() {
-        guard book.changedValues().isEmpty else {
+        let noConfirmationNeeded: Bool
+        if self.isAddingNewBook {
+            let trivialChanges = [
+                #keyPath(Book.addedWhen),
+                #keyPath(Book.manualBookId)
+            ]
+            noConfirmationNeeded = book.changedValues()
+                .filter { !trivialChanges.contains($0.key) }
+                .isEmpty
+        } else {
+            noConfirmationNeeded = book.changedValues().isEmpty
+        }
+
+        guard noConfirmationNeeded else {
             // Confirm exit dialog
             let confirmExit = UIAlertController(title: "Unsaved changes", message: "Are you sure you want to discard your unsaved changes?", preferredStyle: .actionSheet)
             confirmExit.addAction(UIAlertAction(title: "Discard", style: .destructive) { _ in
                 self.dismiss(animated: true)
             })
             confirmExit.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-            confirmExit.popoverPresentationController?.barButtonItem = navigationItem.leftBarButtonItem
+            if let popover = confirmExit.popoverPresentationController {
+                guard let barButtonItem = navigationItem.leftBarButtonItem ?? navigationItem.rightBarButtonItem else {
+                    preconditionFailure("Missing navigation bar button item")
+                }
+                popover.barButtonItem = barButtonItem
+            }
             present(confirmExit, animated: true, completion: nil)
             return
         }
@@ -357,7 +402,7 @@ final class EditBookMetadata: FormViewController {
         guard book.isValidForUpdate() else { return }
 
         if book.changedValues().keys.contains(Book.Key.languageCode.rawValue) {
-            UserDefaults.standard[.lastSelectedLanguage] = book.language
+            LightweightDataStore.lastSelectedLanguage = book.language
         }
         editBookContext.saveIfChanged()
         dismiss(animated: true) {
@@ -367,6 +412,7 @@ final class EditBookMetadata: FormViewController {
 
     @objc func presentEditReadingState() {
         guard book.isValidForUpdate() else { return }
+        UserEngagement.logEvent(.addManualBook)
         navigationController!.pushViewController(EditBookReadState(newUnsavedBook: book, scratchpadContext: editBookContext), animated: true)
     }
 }

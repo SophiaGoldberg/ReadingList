@@ -23,7 +23,6 @@ public class CSVParser: NSObject, CHCSVParserDelegate {
     public init(csvFileUrl: URL) {
         parser = CHCSVParser(contentsOfCSVURL: csvFileUrl)
         parser.sanitizesFields = true
-        parser.recognizesBackslashesAsEscapes = true
         parser.trimsWhitespace = true
         parser.recognizesComments = true
         super.init()

@@ -21,7 +21,7 @@ final class Tip: UIViewController, ThemeableViewController {
             viewController.displayTipPrices()
         }
 
-        if BuildInfo.appConfiguration != .appStore {
+        if BuildInfo.thisBuild.type != .appStore {
             explanationLabel.text = explanationLabel.text! + "\n\nNote: because you are testing a beta version of this app, you won't be able to leave any tips."
         }
 
@@ -84,7 +84,7 @@ final class Tip: UIViewController, ThemeableViewController {
                 guard let viewController = self else { return }
                 viewController.explanationLabel.text = "Thanks for supporting Reading List! ❤️"
                 viewController.tipButtons.forEach { $0.isHidden = true }
-                UserDefaults.standard[.hasEverTipped] = true
+                LightweightDataStore.hasEverTipped = true
 
             case .error(let error):
                 guard error.code != .paymentCancelled else { return }

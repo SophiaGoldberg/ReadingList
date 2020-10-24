@@ -1,6 +1,6 @@
 import Foundation
 
-@objc public enum BookReadState: Int16, CustomStringConvertible, CaseIterable {
+@objc public enum BookReadState: Int16, CustomStringConvertible, CaseIterable, Codable {
     case reading = 1
     case toRead = 2
     case finished = 3

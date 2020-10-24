@@ -1,7 +1,8 @@
 import Foundation
 import ReadingList_Foundation
+import PersistedPropertyWrapper
 
-@objc public enum BookSort: Int16, CaseIterable, CustomStringConvertible, UserSettingType {
+@objc public enum BookSort: Int16, CaseIterable, CustomStringConvertible, Codable {
     // The order of this enum determines the order that the settings are shown in menus, via the allCases property
     case custom = 1
     case listCustom = 6
@@ -12,6 +13,9 @@ import ReadingList_Foundation
     case author = 5
     case progress = 8
     case rating = 9
+
+    @Persisted(encodedDataKey: "bookSortOrdersByReadState", defaultValue: [.toRead: .custom, .reading: .startDate, .finished: .finishDate])
+    static var byReadState: [BookReadState: BookSort]
 
     public var description: String {
         switch self {
@@ -55,6 +59,24 @@ import ReadingList_Foundation
         return bookSortKeyPaths?.map { $0.toNSSortDescriptor() }
     }
 
+    private struct SortKeyPath {
+        init(_ keyPath: String, ascending: Bool = true) {
+            self.keyPath = keyPath
+            self.ascending = ascending
+        }
+
+        let keyPath: String
+        let ascending: Bool
+
+        func toNSSortDescriptor() -> NSSortDescriptor {
+            return NSSortDescriptor(key: keyPath, ascending: ascending)
+        }
+
+        func withKeyPathPrefix(_ prefix: String) -> SortKeyPath {
+            return SortKeyPath("\(prefix).\(self.keyPath)", ascending: self.ascending)
+        }
+    }
+
     private var bookSortKeyPaths: [SortKeyPath]? {
         switch self {
         case .title: return [SortKeyPath(#keyPath(Book.title)), SortKeyPath(#keyPath(Book.subtitle))]
@@ -73,23 +95,5 @@ import ReadingList_Foundation
         case .rating: return [SortKeyPath(Book.Key.rating.rawValue, ascending: false)]
         case .listCustom: return nil
         }
-    }
-}
-
-struct SortKeyPath {
-    init(_ keyPath: String, ascending: Bool = true) {
-        self.keyPath = keyPath
-        self.ascending = ascending
-    }
-
-    let keyPath: String
-    let ascending: Bool
-
-    func toNSSortDescriptor() -> NSSortDescriptor {
-        return NSSortDescriptor(key: keyPath, ascending: ascending)
-    }
-
-    func withKeyPathPrefix(_ prefix: String) -> SortKeyPath {
-        return SortKeyPath("\(prefix).\(self.keyPath)", ascending: self.ascending)
     }
 }

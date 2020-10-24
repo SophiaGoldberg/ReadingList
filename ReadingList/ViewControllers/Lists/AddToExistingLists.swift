@@ -17,7 +17,7 @@ final class AddToExistingLists: UITableViewController {
         fetchRequest.predicate = NSPredicate.or(books.map {
             NSPredicate(format: "SELF IN %@", $0.lists).not()
         })
-        switch UserDefaults.standard[.listSortOrder] {
+        switch ListSortOrder.selectedSort {
         case .custom:
             fetchRequest.sortDescriptors = [NSSortDescriptor(\List.sort), NSSortDescriptor(\List.name)]
         case .alphabetical:
@@ -42,7 +42,7 @@ final class AddToExistingLists: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ExistingListCell", for: indexPath)
         if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: UserDefaults.standard[.theme])
+            cell.defaultInitialise(withTheme: GeneralSettings.theme)
         }
 
         let list = resultsController.object(at: IndexPath(row: indexPath.row, section: 0))

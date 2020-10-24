@@ -161,7 +161,7 @@ final class ListBookLegacyDataSource: LegacyEmptyDetectingTableDataSource, NSFet
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeue(BookTableViewCell.self, for: indexPath)
         let book = getBook(at: indexPath)
-        cell.initialise(withTheme: UserDefaults.standard[.theme])
+        cell.initialise(withTheme: GeneralSettings.theme)
         cell.configureFrom(book, includeReadDates: false)
         return cell
     }

@@ -63,9 +63,6 @@ extension Book {
         if googleBooksId == nil && manualBookId == nil {
             throw BookValidationError.missingIdentifier.NSError()
         }
-        if googleBooksId != nil && manualBookId != nil {
-            throw BookValidationError.conflictingIdentifiers.NSError()
-        }
     }
 }
 
@@ -75,9 +72,8 @@ enum BookValidationError: Int {
     case invalidReadDates = 3
     case invalidLanguageCode = 4
     case missingIdentifier = 5
-    case conflictingIdentifiers = 6
-    case noAuthors = 7
-    case presentCurrentPage = 8
+    case noAuthors = 6
+    case presentCurrentPage = 7
 }
 
 extension BookValidationError {
@@ -87,7 +83,6 @@ extension BookValidationError {
         case .invalidIsbn: return "Isbn13 must be a valid ISBN"
         case .invalidReadDates: return "StartedReading and FinishedReading must align with ReadState"
         case .invalidLanguageCode: return "LanguageCode must be an ISO-639.1 value"
-        case .conflictingIdentifiers: return "GoogleBooksId and ManualBooksId cannot both be non nil"
         case .missingIdentifier: return "GoogleBooksId and ManualBooksId cannot both be nil"
         case .noAuthors: return "Authors array must be non-empty"
         case .presentCurrentPage: return "CurrentPage must be nil when not Currently Reading"

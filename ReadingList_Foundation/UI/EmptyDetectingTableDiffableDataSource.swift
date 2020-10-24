@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 import UIKit
+import os.log
 
 public protocol UITableViewEmptyDetectingDataSource: UITableViewDataSource {
     var emptyDetectionDelegate: UITableViewEmptyDetectingDataSourceDelegate? { get set }
@@ -59,10 +60,12 @@ open class LegacyEmptyDetectingTableDataSource: NSObject, UITableViewEmptyDetect
         cachedNumberOfSections = sectionCount(in: tableView)
         if cachedNumberOfSections == 0 {
             if !isEmpty {
+                os_log("Table switched from being non-empty to having 0 sections", type: .info)
                 emptyDetectionDelegate?.tableDidBecomeEmpty()
                 isEmpty = true
             }
         } else if isEmpty {
+            os_log("Table switched from being empty to having %d sections", type: .info, cachedNumberOfSections)
             emptyDetectionDelegate?.tableDidBecomeNonEmpty()
             isEmpty = false
         }
@@ -75,10 +78,12 @@ open class LegacyEmptyDetectingTableDataSource: NSObject, UITableViewEmptyDetect
         let rowCount = self.rowCount(in: tableView, forSection: section)
         if !isEmpty {
             if cachedNumberOfSections == 1 && section == 0 && rowCount == 0 {
+                os_log("Table switched from being non-empty to having 1 section with 0 rows", type: .info)
                 emptyDetectionDelegate?.tableDidBecomeEmpty()
                 isEmpty = true
             }
         } else {
+            os_log("Table switched from being empty to having %d sections (section %d had %d rows)", type: .info, cachedNumberOfSections, section, rowCount)
             if cachedNumberOfSections != 1 || section != 0 || rowCount != 0 {
                 emptyDetectionDelegate?.tableDidBecomeNonEmpty()
                 isEmpty = false

@@ -50,7 +50,7 @@ final class ManageLists: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: UserDefaults.standard[.theme])
+            cell.defaultInitialise(withTheme: GeneralSettings.theme)
         }
         return cell
     }
@@ -91,7 +91,7 @@ final class ManageLists: UITableViewController {
         }
 
         return TextBoxAlert(title: "Add New List", message: "Enter a name for your list", placeholder: "Enter list name",
-                            keyboardAppearance: UserDefaults.standard[.theme].keyboardAppearance, textValidator: textValidator) { listName in
+                            keyboardAppearance: GeneralSettings.theme.keyboardAppearance, textValidator: textValidator) { listName in
             guard let listName = listName else { preconditionFailure() }
             let childContext = PersistentStoreManager.container.viewContext.childContext()
             let createdList = List(context: childContext, name: listName)

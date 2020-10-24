@@ -5,7 +5,7 @@ enum Progress: Equatable {
     case page(Int32?)
 }
 
-enum ProgressType: Int, Equatable, CustomStringConvertible, UserSettingType {
+enum ProgressType: Int, Equatable, CustomStringConvertible {
     case page = 1
     case percentage = 2
 

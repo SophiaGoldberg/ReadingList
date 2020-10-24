@@ -19,26 +19,6 @@ extension UIAlertController {
 
         return alert
     }
-
-    static func selectOrder(_ orderable: Orderable, onChange: @escaping () -> Void) -> UIAlertController {
-        return selectOption(BookSort.allCases.filter { orderable.supports($0) }, title: "Choose Order", selected: orderable.getSort()) { sortOrder in
-            orderable.setSort(sortOrder)
-            onChange()
-        }
-    }
-
-    static func selectOption<Option>(_ options: [Option], title: String, selected: Option, _ onChange: @escaping (Option) -> Void) -> UIAlertController where Option: CustomStringConvertible, Option: Equatable {
-        let alert = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
-        for option in options {
-            let title = selected == option ? "  \(option.description) ✓" : option.description
-            alert.addAction(UIAlertAction(title: title, style: .default) { _ in
-                if selected == option { return }
-                onChange(option)
-            })
-        }
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-        return alert
-    }
 }
 
 enum Orderable {
@@ -57,8 +37,7 @@ enum Orderable {
     func getSort() -> BookSort {
         switch self {
         case let .book(readState):
-            let setting = UserSettingsCollection.sortSetting(for: readState)
-            return UserDefaults.standard[setting]
+            return BookSort.byReadState[readState]!
         case let .list(list):
             return list.order
         }
@@ -67,8 +46,7 @@ enum Orderable {
     func setSort(_ order: BookSort) {
         switch self {
         case let .book(readState):
-            let setting = UserSettingsCollection.sortSetting(for: readState)
-            UserDefaults.standard[setting] = order
+            BookSort.byReadState[readState] = order
         case let .list(list):
             list.order = order
             list.managedObjectContext!.saveAndLogIfErrored()

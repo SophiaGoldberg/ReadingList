@@ -4,6 +4,10 @@ import Eureka
 final class SortOrder: FormViewController {
 
     override func viewDidLoad() {
+        if #available(iOS 13.0, *) {
+            initialiseInsetGroupedTable()
+        }
+
         super.viewDidLoad()
 
         form +++ Section(header: "Sort Options", footer: """
@@ -12,9 +16,9 @@ final class SortOrder: FormViewController {
             """)
             <<< SwitchRow {
                 $0.title = "Add Books to Top"
-                $0.value = UserDefaults.standard[.addBooksToTopOfCustom]
+                $0.value = GeneralSettings.addBooksToTopOfCustom
                 $0.onChange {
-                    UserDefaults.standard[.addBooksToTopOfCustom] = $0.value ?? false
+                    GeneralSettings.addBooksToTopOfCustom = $0.value ?? false
                 }
             }
         monitorThemeSetting()

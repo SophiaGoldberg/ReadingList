@@ -178,9 +178,11 @@ final class ScanBarcode: UIViewController {
     private func setupAvSession() {
         #if DEBUG
         if CommandLine.arguments.contains("--UITests_Screenshots") {
-            let imageView = UIImageView(frame: view.frame)
+            // Not sure why, but the view frame seems way to big when running on iPad
+            let frameToUse = UIDevice.current.userInterfaceIdiom == .pad ? CGRect(x: 0, y: 0, width: 600, height: 600) : view.frame
+            let imageView = UIImageView(frame: frameToUse)
+            imageView.image = UIImage(named: "example_barcode.jpg")!
             imageView.contentMode = .scaleAspectFill
-            imageView.image = #imageLiteral(resourceName: "example_barcode.jpg")
             view.addSubview(imageView)
             return
         }
@@ -302,19 +304,19 @@ final class ScanBarcode: UIViewController {
         // We're going to be doing a search online, so bring up a spinner
         SVProgressHUD.show(withStatus: "Searching...")
 
-        GoogleBooks.fetch(isbn: isbn)
+        GoogleBooksApi().fetch(isbn: isbn)
             .always(on: .main) { SVProgressHUD.dismiss() }
             .catch(on: .main) { error in
                 self.feedbackGenerator.notificationOccurred(.error)
                 switch error {
-                case GoogleError.noResult: self.handleNoExactMatch(forIsbn: isbn)
+                case GoogleBooksApi.ResponseError.noResult: self.handleNoExactMatch(forIsbn: isbn)
                 default: self.onSearchError(error)
                 }
             }
             .then(on: .main, handleFetchSuccess(_:))
     }
 
-    func handleFetchSuccess(_ fetchResult: FetchResult) {
+    func handleFetchSuccess(_ fetchResult: GoogleBooksApi.FetchResult) {
         if let existingBook = Book.get(fromContext: bulkAddContext ?? PersistentStoreManager.container.viewContext, googleBooksId: fetchResult.id) {
             self.feedbackGenerator.notificationOccurred(.warning)
             self.handleDuplicateBook(existingBook)

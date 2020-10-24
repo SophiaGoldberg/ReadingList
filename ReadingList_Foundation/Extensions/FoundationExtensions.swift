@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import UIKit
 import os.log
 
 public extension String {
@@ -45,6 +46,11 @@ public extension String {
 
     func attributedWithFont(_ font: UIFont) -> NSAttributedString {
         return NSAttributedString(self, font: font)
+    }
+
+    func startIndex(ofFirstSubstring substring: String) -> Int? {
+        guard let substringRange = range(of: substring) else { return nil }
+        return distance(from: startIndex, to: substringRange.lowerBound)
     }
 }
 
@@ -100,6 +106,14 @@ public extension Int {
         guard let int32 = int32 else { return nil }
         self.init(int32)
     }
+
+    var int32: Int32 {
+        Int32(self)
+    }
+
+    func itemCount(singular item: String) -> String {
+        return "\(self.string) \(item.pluralising(self))"
+    }
 }
 
 public extension NSSortDescriptor {
@@ -119,6 +133,12 @@ public extension Collection {
 }
 
 public extension URL {
+    func withHttps() -> URL? {
+        guard var urlComponents = URLComponents(url: self, resolvingAgainstBaseURL: false) else { return nil }
+        urlComponents.scheme = "https"
+        return urlComponents.url
+    }
+
     static func temporary(fileWithName fileName: String) -> URL {
         return URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
     }
@@ -191,15 +211,24 @@ public extension Array where Element: Equatable {
     func subtracting(_ array: [Element]) -> [Element] {
         self.filter { !array.contains($0) }
     }
+
+    func containsAll(_ items: [Element]) -> Bool {
+        return items.allSatisfy { self.contains($0) }
+    }
 }
 
 public extension Date {
-    init?(iso: String?) {
+    init?(_ dateString: String?, format: String) {
+        guard let dateString = dateString else { return nil }
         let dateStringFormatter = DateFormatter()
-        dateStringFormatter.dateFormat = "yyyy-MM-dd"
+        dateStringFormatter.dateFormat = format
         dateStringFormatter.locale = Locale(identifier: "en_US_POSIX")
-        guard let iso = iso, let date = dateStringFormatter.date(from: iso) else { return nil }
+        guard let date = dateStringFormatter.date(from: dateString) else { return nil }
         self.init(timeInterval: 0, since: date)
+    }
+
+    init?(iso: String?) {
+        self.init(iso, format: "yyyy-MM-dd")
     }
 
     func string(withDateFormat dateFormat: String) -> String {
@@ -321,7 +350,23 @@ public extension Sequence {
         return sorted { $0[keyPath: sortableProperty] < $1[keyPath: sortableProperty] }
     }
 
+    func sorted<T>(byAscending sortablePropertySelector: (Element) -> T) -> [Self.Element] where T: Comparable {
+        return sorted { sortablePropertySelector($0) < sortablePropertySelector($1) }
+    }
+
     func map<T>(_ keyPath: KeyPath<Element, T>) -> [T] {
         return map { $0[keyPath: keyPath] }
+    }
+
+    func distinct<T>(by keyPath: KeyPath<Element, T>) -> [Element] where T: Hashable {
+        var newArray = [Element]()
+        var seenItentifiers = Set<T>()
+        for element in self {
+            let identifier = element[keyPath: keyPath]
+            if seenItentifiers.insert(identifier).inserted {
+                newArray.append(element)
+            }
+        }
+        return newArray
     }
 }

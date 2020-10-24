@@ -1,4 +1,5 @@
 import ReadingList_Foundation
+import UIKit
 import CoreData
 
 /// The common functions exposed by all BookTable data sources
@@ -47,7 +48,7 @@ extension BookTableDataSourceCommon {
         // Disable reorderng when searching, or when the sort order is not custom
         guard !searchController.hasActiveSearchTerms else { return false }
         let readState = self.readState(forSection: indexPath.section)
-        guard UserDefaults.standard[UserSettingsCollection.sortSetting(for: readState)] == .custom else { return false }
+        guard BookSort.byReadState[readState] == .custom else { return false }
 
         // We can reorder the books if there are more than one
         return rowCount(in: indexPath.section) > 1
@@ -58,7 +59,7 @@ extension BookTableDataSourceCommon {
         // We should only have movement within a section
         guard sourceIndexPath.section == destinationIndexPath.section else { return }
         let readState = self.readState(forSection: sourceIndexPath.section)
-        guard UserDefaults.standard[UserSettingsCollection.sortSetting(for: readState)] == .custom else { return }
+        guard BookSort.byReadState[readState] == .custom else { return }
 
         sortManager.move(objectAt: sourceIndexPath, to: destinationIndexPath)
         PersistentStoreManager.container.viewContext.saveAndLogIfErrored()
@@ -92,7 +93,7 @@ final class BookTableLegacyDataSource: LegacyEmptyDetectingTableDataSource, Book
         let cell = tableView.dequeue(BookTableViewCell.self, for: indexPath)
         let book = compoundResultsController.object(at: indexPath)
         cell.configureFrom(book)
-        cell.initialise(withTheme: UserDefaults.standard[.theme])
+        cell.initialise(withTheme: GeneralSettings.theme)
         return cell
     }
 

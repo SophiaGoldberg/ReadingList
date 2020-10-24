@@ -8,7 +8,7 @@ import ReadingList_Foundation
 final class SearchOnline: UITableViewController {
 
     var initialSearchString: String?
-    var tableItems = [SearchResult]()
+    var tableItems = [GoogleBooksApi.SearchResult]()
 
     @IBOutlet private weak var addAllButton: UIBarButtonItem!
     @IBOutlet private weak var selectModeButton: TogglableUIBarButtonItem!
@@ -16,6 +16,7 @@ final class SearchOnline: UITableViewController {
     var searchController: UISearchController!
     private let feedbackGenerator = UINotificationFeedbackGenerator()
     private let emptyDatasetView = UINib.instantiate(SearchBooksEmptyDataset.self)
+    private let googleBooksApi = GoogleBooksApi()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -101,8 +102,8 @@ final class SearchOnline: UITableViewController {
      Checks whether the specified result already exists as a book, returning true if it does.
      If it does exist, a duplicate book alert is presented from the provided index path.
     */
-    private func alertIfDuplicate(_ searchResult: SearchResult, indexPath: IndexPath) -> Bool {
-        if let existingBook = Book.get(fromContext: PersistentStoreManager.container.viewContext, googleBooksId: searchResult.id, isbn: searchResult.isbn13) {
+    private func alertIfDuplicate(_ searchResult: GoogleBooksApi.SearchResult, indexPath: IndexPath) -> Bool {
+        if let existingBook = Book.get(fromContext: PersistentStoreManager.container.viewContext, googleBooksId: searchResult.id, isbn: searchResult.isbn13?.string) {
             presentDuplicateBookAlert(book: existingBook, fromSelectedIndex: indexPath)
             return true
         }
@@ -158,7 +159,7 @@ final class SearchOnline: UITableViewController {
 
         SVProgressHUD.show(withStatus: "Searching...")
         feedbackGenerator.prepare()
-        GoogleBooks.search(searchText)
+        googleBooksApi.search(searchText)
             .always(on: .main, SVProgressHUD.dismiss)
             .catch(on: .main) { _ in
                 self.feedbackGenerator.notificationOccurred(.error)
@@ -168,7 +169,7 @@ final class SearchOnline: UITableViewController {
     }
 
     /// - Parameter results: Provide nil to indicate that a search was not performed
-    func displaySearchResults(_ results: [SearchResult]?) {
+    func displaySearchResults(_ results: [GoogleBooksApi.SearchResult]?) {
         if let results = results {
             if results.isEmpty {
                 feedbackGenerator.notificationOccurred(.warning)
@@ -209,14 +210,8 @@ final class SearchOnline: UITableViewController {
         searchController.present(alert, animated: true)
     }
 
-    func createBook(inContext context: NSManagedObjectContext, from searchResult: SearchResult) -> Promise<Book> {
-        return GoogleBooks.fetch(searchResult: searchResult)
-            .recover { error -> FetchResult in
-                switch error {
-                case GoogleError.noResult: return FetchResult(fromSearchResult: searchResult)
-                default: throw error
-                }
-            }
+    func createBook(inContext context: NSManagedObjectContext, from searchResult: GoogleBooksApi.SearchResult) -> Promise<Book> {
+        return googleBooksApi.fetch(searchResult: searchResult)
             .then(on: .main) { fetchResult -> Book in
                 let book = Book(context: context)
                 book.populate(fromFetchResult: fetchResult)
@@ -224,7 +219,7 @@ final class SearchOnline: UITableViewController {
             }
     }
 
-    func fetch(searchResult: SearchResult, segueTo nextVc: @escaping (Book, NSManagedObjectContext) -> UIViewController) {
+    func fetch(searchResult: GoogleBooksApi.SearchResult, segueTo nextVc: @escaping (Book, NSManagedObjectContext) -> UIViewController) {
         UserEngagement.logEvent(.searchOnline)
         SVProgressHUD.show(withStatus: "Loading...")
         let editContext = PersistentStoreManager.container.viewContext.childContext()

@@ -2,7 +2,7 @@ import Foundation
 
 //swiftlint:disable type_body_length type_name explicit_enum_raw_value identifier_name
 // ISO 639.1: two-digit language code
-public enum LanguageIso639_1: String, CustomStringConvertible, CaseIterable {
+public enum LanguageIso639_1: String, CustomStringConvertible, CaseIterable, Decodable {
     case ab
     case aa
     case af

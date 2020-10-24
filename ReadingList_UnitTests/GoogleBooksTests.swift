@@ -1,7 +1,6 @@
 import XCTest
 import Foundation
 import CoreData
-import SwiftyJSON
 @testable import ReadingList
 
 class GoogleBooksTests: XCTestCase {
@@ -19,24 +18,13 @@ class GoogleBooksTests: XCTestCase {
         return try! Data(contentsOf: URL(fileURLWithPath: path))
     }
 
-    private func assertBookEqualToParseResult(_ book: Book, _ parseResult: FetchResult) {
-        XCTAssertEqual(book.googleBooksId, parseResult.id)
-        XCTAssertEqual(book.title, parseResult.title)
-        XCTAssertEqual(book.authors.count, parseResult.authors.count)
-        XCTAssertEqual(book.subjects.map { $0.name }, parseResult.subjects)
-        XCTAssertEqual(book.pageCount, parseResult.pageCount)
-        XCTAssertEqual(book.isbn13, parseResult.isbn13?.int)
-        XCTAssertEqual(book.bookDescription, parseResult.description)
-        XCTAssertEqual(book.publisher, parseResult.publisher)
-    }
-
     func testGoogleBooksFetchParsing() {
-        let json = JSON(dataFromFile(withName: "GoogleBooksFetchResult", ofType: "json"))
+        let jsonData = dataFromFile(withName: "GoogleBooksFetchResult", ofType: "json")
+        let parseResult = try! XCTUnwrap(try! GoogleBooksApi().parseFetchResults(jsonData))
 
-        let parseResult = GoogleBooksParser.parseFetchResults(json)!
         XCTAssertEqual("The Sellout", parseResult.title)
         XCTAssertEqual(1, parseResult.authors.count)
-        XCTAssertEqual("Paul Beatty", parseResult.authors.fullNames)
+        XCTAssertEqual("Paul Beatty", parseResult.authors.first)
         XCTAssertEqual("Fiction", parseResult.subjects[0])
         XCTAssertEqual("Satire", parseResult.subjects[1])
         XCTAssertEqual(304, parseResult.pageCount)
@@ -51,9 +39,9 @@ class GoogleBooksTests: XCTestCase {
     }
 
     func testGoogleBooksSearchParsing() {
-        let json = JSON(dataFromFile(withName: "GoogleBooksSearchResult", ofType: "json"))
+        let jsonData = dataFromFile(withName: "GoogleBooksSearchResult", ofType: "json")
+        let parseResult = try! GoogleBooksApi().parseSearchResults(jsonData)
 
-        let parseResult = GoogleBooksParser.parseSearchResults(json)
         // There are 3 results with no author, which we expect to not show up in the list. Hence: 37.
         XCTAssertEqual(36, parseResult.count)
         for result in parseResult {
@@ -62,13 +50,13 @@ class GoogleBooksTests: XCTestCase {
             XCTAssertNotNil(result.title)
             XCTAssert(!result.title.trimmingCharacters(in: .whitespaces).isEmpty)
             XCTAssertGreaterThan(result.authors.count, 0)
-            XCTAssert(!result.authors.contains { $0.lastName.isEmpty })
+            XCTAssert(!result.authors.contains { $0.isEmptyOrWhitespace })
         }
 
         let resultsWithIsbn = parseResult.filter { $0.isbn13 != nil }.count
         XCTAssertEqual(28, resultsWithIsbn)
 
-        let resultsWithCover = parseResult.filter { $0.thumbnailCoverUrl != nil }.count
+        let resultsWithCover = parseResult.filter { $0.thumbnailImage != nil }.count
         XCTAssertEqual(31, resultsWithCover)
     }
 }

@@ -1,20 +1,16 @@
 import Foundation
 import os.log
 
-public class CsvColumn<TData> {
-    public let header: String
-    public let cellValue: (TData) -> String?
-
-    public init(header: String, cellValue: @escaping (TData) -> String?) {
-        self.header = header
-        self.cellValue = cellValue
-    }
+public protocol CsvColumn {
+    associatedtype Data
+    var header: String { get }
+    func cellValue(_: Data) -> String?
 }
 
-public class CsvExport<TData> {
-    public let columns: [CsvColumn<TData>]
+public struct CsvExport<Column> where Column: CsvColumn {
+    public let columns: [Column]
 
-    public init(columns: [CsvColumn<TData>]) {
+    public init(columns: [Column]) {
         self.columns = columns
     }
 
@@ -22,24 +18,24 @@ public class CsvExport<TData> {
         return columns.map { $0.header }
     }
 
-    func cellValues(data: TData) -> [String] {
+    func cellValues(data: Column.Data) -> [String] {
         return columns.map { $0.cellValue(data) ?? "" }
     }
 }
 
-public class CsvExporter<TData> {
-    let csvExport: CsvExport<TData>
+public class CsvExporter<Column> where Column: CsvColumn {
+    let csvExport: CsvExport<Column>
     let filePath: URL
     let temporaryFilePath = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(UUID().uuidString)
     private var fileBuffer: String
 
-    public init(filePath: URL, csvExport: CsvExport<TData>) {
+    public init(filePath: URL, csvExport: CsvExport<Column>) {
         self.csvExport = csvExport
         self.filePath = filePath
         fileBuffer = CsvExporter.convertToCsvLine(csvExport.headers())
     }
 
-    public func addData(_ dataArray: [TData]) {
+    public func addData(_ dataArray: [Column.Data]) {
         for data in dataArray {
             addData(data)
         }
@@ -51,7 +47,7 @@ public class CsvExporter<TData> {
         try! FileManager.default.moveItem(at: temporaryFilePath, to: filePath)
     }
 
-    public func addData(_ data: TData) {
+    public func addData(_ data: Column.Data) {
         fileBuffer.append(CsvExporter.convertToCsvLine(csvExport.cellValues(data: data)))
         // flush to file every 1MB
         if fileBuffer.utf8.count > 1048576 {

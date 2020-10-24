@@ -53,11 +53,10 @@ final class ListBookTable: UITableViewController {
         navigationItem.searchController = searchController
 
         if #available(iOS 13.0, *) {
-            dataSource = ListBookDiffableDataSource(tableView, list: list, controller: buildResultsController(), searchController: searchController, onContentChanged: reloadHeaders)
+            dataSource = ListBookDiffableDataSource(tableView, list: list, controller: buildResultsControllerAndFetch(), searchController: searchController, onContentChanged: reloadHeaders)
         } else {
-            dataSource = ListBookLegacyDataSource(tableView, list: list, controller: buildResultsController(), searchController: searchController, onContentChanged: reloadHeaders)
+            dataSource = ListBookLegacyDataSource(tableView, list: list, controller: buildResultsControllerAndFetch(), searchController: searchController, onContentChanged: reloadHeaders)
         }
-        try! dataSource.controller.performFetch()
 
         // Configure the empty state manager to detect when the table becomes empty
         emptyStateManager = ListBookTableEmptyDataSetManager(tableView: tableView, navigationBar: navigationController?.navigationBar, navigationItem: navigationItem, searchController: searchController, list: list)
@@ -70,7 +69,7 @@ final class ListBookTable: UITableViewController {
         monitorThemeSetting()
     }
 
-    private func buildResultsController() -> NSFetchedResultsController<ListItem> {
+    private func buildResultsControllerAndFetch() -> NSFetchedResultsController<ListItem> {
         let fetchRequest = NSManagedObject.fetchRequest(ListItem.self, batch: 50)
         fetchRequest.predicate = defaultPredicate
         fetchRequest.sortDescriptors = list.order.listItemSortDescriptors
@@ -78,9 +77,11 @@ final class ListBookTable: UITableViewController {
 
         // Use a constant property as the sectionNameKeyPath - this will ensure that there are no sections when there are no
         // results, and thus cause the section headers to be removed when the results count goes to 0.
-        return NSFetchedResultsController(fetchRequest: fetchRequest,
-                                          managedObjectContext: PersistentStoreManager.container.viewContext,
-                                          sectionNameKeyPath: #keyPath(Book.constantEmptyString), cacheName: nil)
+        let controller = NSFetchedResultsController(fetchRequest: fetchRequest,
+                                                    managedObjectContext: PersistentStoreManager.container.viewContext,
+                                                    sectionNameKeyPath: #keyPath(Book.constantEmptyString), cacheName: nil)
+        try! controller.performFetch()
+        return controller
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -102,14 +103,13 @@ final class ListBookTable: UITableViewController {
         }
     }
 
-    private func listTextField() -> UITextField {
-        guard let navigationBar = navigationController?.navigationBar else { preconditionFailure() }
+    private func listTextField(for navigationBar: UINavigationBar) -> UITextField {
         let textField = UITextField(frame: navigationBar.frame.inset(by: UIEdgeInsets(top: 0, left: 115, bottom: 0, right: 115)))
         textField.text = listNameFieldDefaultText
         textField.textAlignment = .center
         textField.font = UIFont.systemFont(ofSize: 17.0, weight: .semibold)
         if #available(iOS 13.0, *) { } else {
-            let theme = UserDefaults.standard[.theme]
+            let theme = GeneralSettings.theme
             textField.textColor = theme.titleTextColor
             textField.keyboardAppearance = theme.keyboardAppearance
         }
@@ -175,7 +175,11 @@ final class ListBookTable: UITableViewController {
         searchController.searchBar.isEnabled = !isEditing
         if isEditing {
             if listNameField == nil {
-                listNameField = listTextField()
+                guard let navigationBar = navigationController?.navigationBar else {
+                    assertionFailure("Unexpected missing navigation bar")
+                    return
+                }
+                listNameField = listTextField(for: navigationBar)
                 navigationItem.title = nil
             }
         } else {
@@ -194,9 +198,8 @@ final class ListBookTable: UITableViewController {
             searchController.isActive = false
         }
         // Results controller delegates don't seem to play nicely with changing sort descriptors. So instead, we rebuild the whole
-        // result controller, not forgetting to pass the new one to the data source.
-        self.dataSource.controller = buildResultsController()
-        try! dataSource.controller.performFetch()
+        // result controller.
+        self.dataSource.controller = buildResultsControllerAndFetch()
         dataSource.updateData(animate: true)
 
         // Put the top row at the "middle", so that the top row is not right up at the top of the table

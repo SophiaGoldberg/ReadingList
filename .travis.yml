@@ -1,29 +1,31 @@
 language: swift
-osx_image: xcode11.4
+osx_image: xcode12.1
 git:
-  depth: false # To enable build numbering from an accurate commit count
+  depth: false
+env:
+  - FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT=10
 cache:
   bundler: true
-  cocoapods: true
   directories:
-    - $HOME/Library/Caches/Homebrew/
-    - /usr/local/lib/mint/
+  - "$HOME/Library/Caches/Homebrew/"
+  - "/usr/local/lib/mint/"
 install:
-  - bundle install
-  - brew update && brew install mint
-  - pod repo update
+- bundle install
+- brew update && brew install mint
 before_script:
-  # Prepare a GitHub login to enable the certificates repository to be cloned
-  - echo -e "machine github.com\n  login AndrewBennet\n  password $GITHUB_TOKEN" > ~/.netrc
-  - bundle exec fastlane preprocess
+- echo -e "machine github.com\n  login AndrewBennet\n  password $GITHUB_TOKEN" > ~/.netrc
+- bundle exec fastlane preprocess
 script:
-  - bundle exec fastlane ci || travis_terminate 1;
+- bundle exec fastlane ci || travis_terminate 1;
 deploy:
   skip_cleanup: true
   provider: script
   script:
-    - bundle exec fastlane upload_build
+  - bundle exec fastlane upload_build
   on:
     branch: master
 after_deploy:
-  - bundle exec fastlane tag_build
+- bundle exec fastlane tag_build
+before_install:
+- openssl aes-256-cbc -K $encrypted_07fef076f6ea_key -iv $encrypted_07fef076f6ea_iv
+  -in AuthKey_K665GM82PP.p8.enc -out AuthKey_K665GM82PP.p8 -d

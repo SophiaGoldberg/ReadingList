@@ -282,6 +282,18 @@ public extension UIImage {
             return nil
         }
     }
+
+    /**
+     If running iOS 13 or higher, returns the UIImage with the provided system name, at large scale and the provided weight. If iOS 12 or lower, or
+     the image name provided does not correspond to a system image, returns nil.
+     */
+    convenience init?(largeSystemImageNamed name: String) {
+        if #available(iOS 13.0, *) {
+            self.init(systemName: name, withConfiguration: UIImage.SymbolConfiguration(scale: .large))
+        } else {
+            return nil
+        }
+    }
 }
 
 public extension NSAttributedString {
@@ -403,6 +415,11 @@ public extension UIDevice {
         case "iPhone12,1":                              return "iPhone 11"
         case "iPhone12,3":                              return "iPhone 11 Pro"
         case "iPhone12,5":                              return "iPhone 11 Pro Max"
+        case "iPhone12,8":                              return "iPhone SE (2nd Generation)"
+        case "iPhone13,1":                              return "iPhone 12 Mini"
+        case "iPhone13,2":                              return "iPhone 12"
+        case "iPhone13,3":                              return "iPhone 12 Pro"
+        case "iPhone13,4":                              return "iPhone 12 Pro Max"
         case "iPad4,1", "iPad4,2", "iPad4,3":           return "iPad Air"
         case "iPad5,3", "iPad5,4":                      return "iPad Air 2"
         case "iPad11,3", "iPad11,4":                    return "iPad Air 3"
@@ -411,13 +428,24 @@ public extension UIDevice {
         case "iPad4,4", "iPad4,5", "iPad4,6":           return "iPad Mini 2"
         case "iPad4,7", "iPad4,8", "iPad4,9":           return "iPad Mini 3"
         case "iPad5,1", "iPad5,2":                      return "iPad Mini 4"
+        case "iPad11,1", "iPad11,2":                    return "iPad Mini 5"
         case "iPad6,3", "iPad6,4":                      return "iPad Pro 9.7 Inch"
         case "iPad6,7", "iPad6,8":                      return "iPad Pro 12.9 Inch"
         case "iPad7,1", "iPad7,2":                      return "iPad Pro 12.9 Inch (2nd Generation)"
         case "iPad7,3", "iPad7,4":                      return "iPad Pro 10.5 Inch"
         case "iPad8,1", "iPad8,2", "iPad8,3", "iPad8,4": return "iPad Pro 11 Inch"
+        case "iPad8,9", "iPad8,10":                      return "iPad Pro 11 Inch (2nd Generation)"
         case "iPad8,5", "iPad8,6", "iPad8,7", "iPad8,8": return "iPad Pro 12.9 Inch (3rd Generation)"
+        case "iPad8,11", "iPad8,12":                    return "iPad Pro 12.9 Inch (4th Generation)"
         default:                                        return identifier
+        }
+    }
+}
+
+public extension UIAlertController {
+    func addActions<S>(_ actions: S) where S: Sequence, S.Element == UIAlertAction {
+        for action in actions {
+            addAction(action)
         }
     }
 }
