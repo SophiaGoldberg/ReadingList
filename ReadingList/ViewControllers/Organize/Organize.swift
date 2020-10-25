@@ -54,21 +54,15 @@ final class Organize: UITableViewController {
             dataSource = OrganizeTableViewDataSourceLegacy(tableView, resultsController: buildResultsController())
         }
 
-        emptyDataSetManager = OrganizeEmptyDataSetManager(tableView: tableView, navigationBar: navigationController?.navigationBar, navigationItem: navigationItem, searchController: searchController) { [weak self] _ in
-            self?.configureNavigationBarButtons()
-        }
+        emptyDataSetManager = OrganizeEmptyDataSetManager(tableView: tableView, navigationBar: navigationController?.navigationBar, navigationItem: navigationItem, searchController: searchController)
         dataSource.emptyDetectionDelegate = emptyDataSetManager
 
         // Perform the initial data source load, and then configure the navigation bar buttons, which depend on the empty state of the table
         try! dataSource.resultsController.performFetch()
         dataSource.updateData(animate: false)
-        configureNavigationBarButtons()
+        navigationItem.leftBarButtonItem = editButtonItem
 
         monitorThemeSetting()
-    }
-
-    private func configureNavigationBarButtons() {
-        navigationItem.leftBarButtonItem = emptyDataSetManager.isShowingEmptyState ? nil : self.editButtonItem
     }
 
     private func buildResultsController() -> NSFetchedResultsController<List> {
@@ -86,7 +80,7 @@ final class Organize: UITableViewController {
     }
 
     private func sortDescriptors() -> [NSSortDescriptor] {
-        var sortDescriptors = [NSSortDescriptor(\List.name)]
+        var sortDescriptors = [NSSortDescriptor(\List.custom)]
         switch ListSortOrder.selectedSort {
         case .custom:
             sortDescriptors.append(contentsOf: [NSSortDescriptor(\List.sort), NSSortDescriptor(\List.name)])
@@ -104,7 +98,8 @@ final class Organize: UITableViewController {
             dataSource.resultsController.fetchRequest.predicate = NSPredicate(boolean: true)
         }
         searchController.searchBar.isEnabled = !editing
-        reloadHeaders()
+        try! dataSource.resultsController.performFetch()
+        dataSource.updateData(animate: true)
     }
 
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
@@ -277,7 +272,13 @@ final class Organize: UITableViewController {
 extension Organize: HeaderConfigurable {
     func configureHeader(_ header: UITableViewHeaderFooterView, at index: Int) {
         guard let header = header as? BookTableHeader else { preconditionFailure() }
-        let isCustomListSection = index == 1
+        guard let sectionName = dataSource.resultsController.sections?[index].name else {
+            assertionFailure("Section info not available to generate section header")
+            return
+        }
+        // The section keypath was List.custom; if the section name is the string representation of True,
+        // then this is the section corresponding to custom lists.
+        let isCustomListSection = sectionName == "1"
         let labelText = isCustomListSection ? "CUSTOM LISTS" : "SYSTEM LISTS"
         header.configure(labelText: labelText, enableSort: isCustomListSection && !isEditing && !searchController.isActive)
     }

@@ -2,11 +2,7 @@ import ReadingList_Foundation
 import UIKit
 
 final class OrganizeEmptyDataSetManager: UITableViewSearchableEmptyStateManager {
-
-    let onEmptyStateChange: (Bool) -> Void
-
-    init(tableView: UITableView, navigationBar: UINavigationBar?, navigationItem: UINavigationItem, searchController: UISearchController, onEmptyStateChange: @escaping (Bool) -> Void) {
-        self.onEmptyStateChange = onEmptyStateChange
+    init(tableView: UITableView, navigationBar: UINavigationBar?, navigationItem: UINavigationItem, searchController: UISearchController) {
         super.init(tableView, navigationBar: navigationBar, navigationItem: navigationItem, searchController: searchController)
     }
 
@@ -27,10 +23,5 @@ final class OrganizeEmptyDataSetManager: UITableViewSearchableEmptyStateManager 
             .appending(" button above, or tap ", font: emptyStateDescriptionFont)
             .appending("Manage Lists", font: emptyStateDescriptionBoldFont)
             .appending(" when viewing a book.", font: emptyStateDescriptionFont)
-    }
-
-    final override func emptyStateDidChange() {
-        super.emptyStateDidChange()
-        self.onEmptyStateChange(isShowingEmptyState)
     }
 }
