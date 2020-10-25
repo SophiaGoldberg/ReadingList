@@ -354,10 +354,6 @@ public extension Sequence {
         return sorted { sortablePropertySelector($0) < sortablePropertySelector($1) }
     }
 
-    func map<T>(_ keyPath: KeyPath<Element, T>) -> [T] {
-        return map { $0[keyPath: keyPath] }
-    }
-
     func distinct<T>(by keyPath: KeyPath<Element, T>) -> [Element] where T: Hashable {
         var newArray = [Element]()
         var seenItentifiers = Set<T>()
