@@ -61,7 +61,7 @@ class List: NSManagedObject {
             index += 1
         }
     }
-    
+
     func isStockList(_ stockList: StockList) -> Bool {
         return !custom && name == stockList.rawValue
     }

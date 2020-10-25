@@ -25,7 +25,7 @@ extension UITableViewCell {
             }
             editingAccessoryType = .none
         }
-        
+
         if #available(iOS 13.0, *) { } else {
             defaultInitialise(withTheme: GeneralSettings.theme)
         }
@@ -221,7 +221,7 @@ final class Organize: UITableViewController {
             }
         }
     }
-    
+
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView.isEditing {
             let list = dataSource.resultsController.object(at: indexPath)
@@ -235,7 +235,7 @@ final class Organize: UITableViewController {
         // No segue in edit mode
         return !tableView.isEditing
     }
-    
+
     override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
         if indexPath.section == 0 {
             return .none
@@ -243,7 +243,7 @@ final class Organize: UITableViewController {
             return .delete
         }
     }
-    
+
     override func tableView(_ tableView: UITableView, shouldIndentWhileEditingRowAt indexPath: IndexPath) -> Bool {
         return indexPath.section != 0
     }

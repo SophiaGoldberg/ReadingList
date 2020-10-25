@@ -159,8 +159,8 @@ final class BookDetails: UIViewController, UIScrollViewDelegate { //swiftlint:di
         // There is a placeholder view for the case of no lists. Lists are stored in 3 nested stack views
         noLists.isHidden = !book.lists.isEmpty
         listsStack.superview!.superview!.superview!.isHidden = book.lists.isEmpty
-        
-        let inWishList = book.lists.contains(where: {$0.isStockList(.wishList)})
+
+        let inWishList = book.lists.contains { $0.isStockList(.wishList) }
         if inWishList {
             addToWishList.setTitle("Remove from Wish List", for: .normal)
         } else {
@@ -168,7 +168,7 @@ final class BookDetails: UIViewController, UIScrollViewDelegate { //swiftlint:di
         }
     }
 
-    @IBAction func addToWishList(_ sender: UIButton) {
+    @IBAction private func addToWishList(_ sender: UIButton) {
         let childContext = PersistentStoreManager.container.viewContext.childContext()
         let wishList = List.getStockList(.wishList, in: childContext)
         guard let book = book?.inContext(childContext) else { return }
