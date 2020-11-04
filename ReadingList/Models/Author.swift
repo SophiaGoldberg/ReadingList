@@ -2,7 +2,8 @@ import Foundation
 import CoreData
 
 @objc(Author)
-class Author: NSObject, NSCoding {
+class Author: NSObject, NSSecureCoding {
+    static var supportsSecureCoding = true
 
     let lastName: String
     let firstNames: String?
@@ -12,9 +13,25 @@ class Author: NSObject, NSCoding {
         self.firstNames = firstNames
     }
 
+    override func isEqual(_ object: Any?) -> Bool {
+        guard let otherAuthor = object as? Author else { return false }
+        return lastName == otherAuthor.lastName &&
+            firstNames == otherAuthor.firstNames
+    }
+
+    convenience init(firstNameLastName text: String) {
+        if let range = text.range(of: " ", options: .backwards) {
+            let firstNames = text[..<range.upperBound].trimming()
+            let lastName = text[range.lowerBound...].trimming()
+            self.init(lastName: lastName, firstNames: firstNames)
+        } else {
+            self.init(lastName: text, firstNames: nil)
+        }
+    }
+
     required convenience init?(coder aDecoder: NSCoder) {
-        let lastName = aDecoder.decodeObject(forKey: "lastName") as! String
-        let firstNames = aDecoder.decodeObject(forKey: "firstNames") as! String?
+        let lastName = aDecoder.decodeObject(of: NSString.self, forKey: "lastName")! as String
+        let firstNames = aDecoder.decodeObject(of: NSString.self, forKey: "firstNames") as String?
         self.init(lastName: lastName, firstNames: firstNames)
     }
 

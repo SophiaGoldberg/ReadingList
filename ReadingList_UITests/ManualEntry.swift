@@ -67,14 +67,4 @@ class ManualEntry: XCTestCase {
         sleep(1)
         XCTAssertEqual(app.tables.cells.count, bookCount - 1)
     }
-
-    func testExportBook() {
-        let app = ReadingListApp()
-        app.launchArguments = defaultLaunchArguments
-        app.launch()
-
-        app.clickTab(.settings)
-        app.tables.staticTexts["Import / Export"].tap()
-        app.tables.staticTexts["Export"].tap()
-    }
 }

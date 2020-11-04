@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13771" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="rYQ-41-cfc">
-    <device id="retina4_7" orientation="portrait">
-        <adaptation id="fullscreen"/>
-    </device>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="15505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="rYQ-41-cfc">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13772"/>
-        <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
-        <capability name="Constraints with non-1.0 multipliers" minToolsVersion="5.1"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15509"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -20,12 +16,12 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VIt-na-l7a">
-                                <rect key="frame" x="0.0" y="64" width="375" height="603"/>
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VIt-na-l7a" customClass="PreviewView" customModule="ReadingList" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                                 <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                             </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="710-zJ-iLP">
-                                <rect key="frame" x="47" y="295.5" width="281" height="140.5"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="710-zJ-iLP" customClass="BarcodeScanPreviewOverlay" customModule="ReadingList" customModuleProvider="target">
+                                <rect key="frame" x="47" y="263" width="281" height="141"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="710-zJ-iLP" secondAttribute="height" multiplier="2:1" id="bw1-bF-OIn"/>
                                 </constraints>
@@ -39,11 +35,22 @@
                             <constraint firstItem="710-zJ-iLP" firstAttribute="centerX" secondItem="VIt-na-l7a" secondAttribute="centerX" id="Xh8-sC-A2p"/>
                             <constraint firstItem="710-zJ-iLP" firstAttribute="centerY" secondItem="VIt-na-l7a" secondAttribute="centerY" id="tKA-ms-Iut"/>
                             <constraint firstItem="710-zJ-iLP" firstAttribute="width" secondItem="VIt-na-l7a" secondAttribute="width" multiplier="3:4" id="vJw-tw-9FO"/>
-                            <constraint firstItem="VIt-na-l7a" firstAttribute="top" secondItem="bpp-e0-H2Y" secondAttribute="top" id="wv6-dE-OPd"/>
+                            <constraint firstItem="VIt-na-l7a" firstAttribute="top" secondItem="Li1-Bc-Q61" secondAttribute="top" id="wv6-dE-OPd"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="bpp-e0-H2Y"/>
                     </view>
                     <tabBarItem key="tabBarItem" title="Item" id="C92-un-dfo"/>
+                    <toolbarItems>
+                        <barButtonItem title=" Scan Many " id="qo7-cK-IeZ" customClass="TogglableUIBarButtonItem" customModule="ReadingList_Foundation">
+                            <color key="tintColor" systemColor="systemBlueColor" red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        </barButtonItem>
+                        <barButtonItem style="plain" systemItem="flexibleSpace" id="7wO-mK-uZ1"/>
+                        <barButtonItem enabled="NO" title="Review Books" style="done" id="8Pl-ki-4Te">
+                            <connections>
+                                <action selector="reviewBooksPressed:" destination="MGK-ee-YjP" id="TP6-5w-c1L"/>
+                            </connections>
+                        </barButtonItem>
+                    </toolbarItems>
                     <navigationItem key="navigationItem" title="Scan Barcode" id="UpE-wp-wNv">
                         <barButtonItem key="backBarButtonItem" title="Scan" id="sTj-nn-7bp"/>
                         <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="MuG-PG-sW7">
@@ -51,22 +58,30 @@
                                 <action selector="cancelWasPressed:" destination="MGK-ee-YjP" id="DTh-jk-3Uy"/>
                             </connections>
                         </barButtonItem>
+                        <barButtonItem key="rightBarButtonItem" image="Torch" id="6vR-mA-5SB">
+                            <connections>
+                                <action selector="torchPressed:" destination="MGK-ee-YjP" id="LQk-mm-3me"/>
+                            </connections>
+                        </barButtonItem>
                     </navigationItem>
+                    <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="cameraPreviewView" destination="VIt-na-l7a" id="62h-so-ss3"/>
-                        <outlet property="previewOverlay" destination="710-zJ-iLP" id="qCX-qv-uzC"/>
+                        <outlet property="reviewBooksButton" destination="8Pl-ki-4Te" id="olo-87-UlW"/>
+                        <outlet property="scanMultipleToggle" destination="qo7-cK-IeZ" id="bTt-ga-12E"/>
+                        <outlet property="torchButton" destination="6vR-mA-5SB" id="rM5-Va-fPp"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="akl-GW-6eJ" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-1471.2" y="-393.55322338830587"/>
         </scene>
-        <!--Non Rotating Navigation Controller-->
+        <!--Themed Navigation Controller-->
         <scene sceneID="YJu-cP-9jM">
             <objects>
-                <navigationController id="rYQ-41-cfc" customClass="NonRotatingNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <navigationController id="rYQ-41-cfc" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="rHe-eY-Zk8">
-                        <rect key="frame" x="0.0" y="20" width="375" height="44"/>
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <connections>
@@ -78,4 +93,7 @@
             <point key="canvasLocation" x="-2270" y="-394"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="Torch" width="25" height="25"/>
+    </resources>
 </document>

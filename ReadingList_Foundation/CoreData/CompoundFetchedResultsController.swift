@@ -35,7 +35,7 @@ public class CompoundFetchedResultsController<T: NSFetchRequestResult>: NSObject
 
     private func sectionOffset(forController controller: NSFetchedResultsController<T>) -> Int {
         // Determine the index of the specified controller
-        let controllerIndex = controllers.index(of: controller)!
+        let controllerIndex = controllers.firstIndex(of: controller)!
 
         // Count the number of sections present in all controllers up to (but not including) the supplied controller
         return controllers.prefix(upTo: controllerIndex).map { $0.sections!.count }.reduce(0, +)

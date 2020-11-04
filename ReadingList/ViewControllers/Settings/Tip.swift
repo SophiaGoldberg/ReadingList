@@ -1,7 +1,7 @@
 import SwiftyStoreKit
 import StoreKit
 
-class Tip: UIViewController, ThemeableViewController {
+final class Tip: UIViewController, ThemeableViewController {
     let tipProductIds = ["smalltip", "mediumtip", "largetip", "verylargetip", "gianttip"]
     var tipProducts: Set<SKProduct>?
 
@@ -21,7 +21,7 @@ class Tip: UIViewController, ThemeableViewController {
             viewController.displayTipPrices()
         }
 
-        if BuildInfo.appConfiguration != .appStore {
+        if BuildInfo.thisBuild.type != .appStore {
             explanationLabel.text = explanationLabel.text! + "\n\nNote: because you are testing a beta version of this app, you won't be able to leave any tips."
         }
 
@@ -74,7 +74,7 @@ class Tip: UIViewController, ThemeableViewController {
     @IBAction private func tipPressed(_ sender: UIButton) {
         guard let tipProducts = tipProducts else { return }
 
-        let senderIndex = tipButtons.index(of: sender)!
+        let senderIndex = tipButtons.firstIndex(of: sender)!
         let productId = tipProductIds[senderIndex]
         let product = tipProducts.first { $0.productIdentifier == productId }!
 
@@ -84,7 +84,7 @@ class Tip: UIViewController, ThemeableViewController {
                 guard let viewController = self else { return }
                 viewController.explanationLabel.text = "Thanks for supporting Reading List! ❤️"
                 viewController.tipButtons.forEach { $0.isHidden = true }
-                UserDefaults.standard[.hasEverTipped] = true
+                LightweightDataStore.hasEverTipped = true
 
             case .error(let error):
                 guard error.code != .paymentCancelled else { return }
@@ -97,6 +97,7 @@ class Tip: UIViewController, ThemeableViewController {
     }
 
     func initialise(withTheme theme: Theme) {
+        if #available(iOS 13.0, *) { return }
         view.backgroundColor = theme.viewBackgroundColor
         explanationLabel.textColor = theme.titleTextColor
     }

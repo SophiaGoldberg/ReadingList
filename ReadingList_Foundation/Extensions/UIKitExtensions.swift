@@ -30,7 +30,7 @@ public extension UIView {
 
     var nextSibling: UIView? {
         guard let views = superview?.subviews else { return nil }
-        let thisIndex = views.index(of: self)!
+        let thisIndex = views.firstIndex(of: self)!
         guard thisIndex + 1 < views.count else { return nil }
         return views[thisIndex + 1]
     }
@@ -96,7 +96,7 @@ public extension UIContextualAction {
 public extension UISearchController {
     convenience init(filterPlaceholderText: String) {
         self.init(searchResultsController: nil)
-        dimsBackgroundDuringPresentation = false
+        obscuresBackgroundDuringPresentation = false
         searchBar.returnKeyType = .done
         searchBar.placeholder = filterPlaceholderText
         searchBar.searchBarStyle = .default
@@ -173,6 +173,11 @@ public extension UIPopoverPresentationController {
         let cell = tableView.cellForRow(at: indexPath)!
         setSourceCell(cell, inTableView: tableView, arrowDirections: arrowDirections)
     }
+
+    func setButton(_ button: UIButton) {
+        sourceView = button
+        sourceRect = button.bounds
+    }
 }
 
 public extension UITabBarItem {
@@ -193,7 +198,7 @@ public extension UIActivity.ActivityType {
 }
 
 public extension UISearchBar {
-    var isActive: Bool {
+    var isEnabled: Bool {
         get {
             return isUserInteractionEnabled
         }
@@ -237,7 +242,7 @@ public extension UILabel {
         let labelTextSize = (labelText as NSString).boundingRect(
             with: CGSize(width: frame.size.width, height: .greatestFiniteMagnitude),
             options: .usesLineFragmentOrigin,
-            attributes: [.font: font],
+            attributes: [.font: font!],
             context: nil).size
         return labelTextSize.height > bounds.size.height
     }
@@ -262,20 +267,6 @@ public extension UILabel {
     }
 }
 
-public extension UIColor {
-    convenience init(fromHex hex: UInt32) {
-        self.init(
-            red: CGFloat((hex & 0xFF0000) >> 16) / 255.0,
-            green: CGFloat((hex & 0x00FF00) >> 8) / 255.0,
-            blue: CGFloat(hex & 0x0000FF) / 255.0,
-            alpha: CGFloat(1.0)
-        )
-    }
-
-    static let flatGreen = UIColor(fromHex: 0x2ECC71)
-    static let buttonBlue = UIColor(red: 0, green: 0.478431, blue: 1, alpha: 1)
-}
-
 public extension UIFont {
     func scaled(forTextStyle textStyle: UIFont.TextStyle) -> UIFont {
         let fontSize = UIFont.preferredFont(forTextStyle: textStyle).pointSize
@@ -291,25 +282,71 @@ public extension UIImage {
             return nil
         }
     }
+
+    /**
+     If running iOS 13 or higher, returns the UIImage with the provided system name, at large scale and the provided weight. If iOS 12 or lower, or
+     the image name provided does not correspond to a system image, returns nil.
+     */
+    convenience init?(largeSystemImageNamed name: String) {
+        if #available(iOS 13.0, *) {
+            self.init(systemName: name, withConfiguration: UIImage.SymbolConfiguration(scale: .large))
+        } else {
+            return nil
+        }
+    }
 }
 
 public extension NSAttributedString {
-    @objc convenience init(_ string: String, withFont font: UIFont) {
+    @objc convenience init(_ string: String, font: UIFont) {
         self.init(string: string, attributes: [.font: font])
     }
 
-    static func createFromMarkdown(_ markdown: String, font: UIFont, boldFont: UIFont) -> NSMutableAttributedString {
-        let boldedResult = NSMutableAttributedString()
-        for (index, component) in markdown.components(separatedBy: "**").enumerated() {
-            boldedResult.append(NSAttributedString(component, withFont: index % 2 == 0 ? font : boldFont))
-        }
-        return boldedResult
+    func mutable() -> NSMutableAttributedString {
+        return NSMutableAttributedString(attributedString: self)
+    }
+}
+
+public extension NSMutableAttributedString {
+    @objc convenience init(_ string: String, font: UIFont) {
+        self.init(string: string, attributes: [.font: font])
+    }
+
+    @discardableResult func appending(_ text: String, font: UIFont) -> NSMutableAttributedString {
+        self.append(NSAttributedString(text, font: font))
+        return self
+    }
+
+    @discardableResult func attributedWithColor(_ color: UIColor) -> NSMutableAttributedString {
+        self.addAttribute(.foregroundColor, value: color, range: NSRange(location: 0, length: self.length))
+        return self
     }
 }
 
 public extension UITableView {
     func advisedFetchBatchSize(forTypicalCell cell: UITableViewCell) -> Int {
         return Int((self.frame.height / cell.frame.height) * 1.3)
+    }
+
+    func register<Cell: UITableViewCell>(_ type: Cell.Type) {
+        register(UINib(type), forCellReuseIdentifier: String(describing: type))
+    }
+
+    func dequeue<Cell: UITableViewCell>(_ type: Cell.Type, for indexPath: IndexPath) -> Cell {
+        guard let cell = dequeueReusableCell(withIdentifier: String(describing: type), for: indexPath) as? Cell else {
+            preconditionFailure()
+        }
+        return cell
+    }
+
+    func register<HeaderFooter: UITableViewHeaderFooterView>(_ type: HeaderFooter.Type) {
+        register(UINib(type), forHeaderFooterViewReuseIdentifier: String(describing: type))
+    }
+
+    func dequeue<HeaderFooter: UITableViewHeaderFooterView>(_ type: HeaderFooter.Type) -> HeaderFooter {
+        guard let header = dequeueReusableHeaderFooterView(withIdentifier: String(describing: type)) as? HeaderFooter else {
+            preconditionFailure()
+        }
+        return header
     }
 }
 
@@ -360,8 +397,7 @@ public extension UIDevice {
         let identifier = modelIdentifier
         switch identifier {
         case "iPod7,1":                                 return "iPod Touch 6"
-        case "iPhone5,1", "iPhone5,2":                  return "iPhone 5"
-        case "iPhone5,3", "iPhone5,4":                  return "iPhone 5c"
+        case "iPod9,1":                                 return "iPod Touch 7"
         case "iPhone6,1", "iPhone6,2":                  return "iPhone 5s"
         case "iPhone7,2":                               return "iPhone 6"
         case "iPhone7,1":                               return "iPhone 6 Plus"
@@ -376,19 +412,40 @@ public extension UIDevice {
         case "iPhone11,2":                              return "iPhone XS"
         case "iPhone11,4", "iPhone11,6":                return "iPhone XS Max"
         case "iPhone11,8":                              return "iPhone XR"
-        case "iPad3,4", "iPad3,5", "iPad3,6":           return "iPad 4"
+        case "iPhone12,1":                              return "iPhone 11"
+        case "iPhone12,3":                              return "iPhone 11 Pro"
+        case "iPhone12,5":                              return "iPhone 11 Pro Max"
+        case "iPhone12,8":                              return "iPhone SE (2nd Generation)"
+        case "iPhone13,1":                              return "iPhone 12 Mini"
+        case "iPhone13,2":                              return "iPhone 12"
+        case "iPhone13,3":                              return "iPhone 12 Pro"
+        case "iPhone13,4":                              return "iPhone 12 Pro Max"
         case "iPad4,1", "iPad4,2", "iPad4,3":           return "iPad Air"
         case "iPad5,3", "iPad5,4":                      return "iPad Air 2"
+        case "iPad11,3", "iPad11,4":                    return "iPad Air 3"
         case "iPad6,11", "iPad6,12":                    return "iPad 5"
         case "iPad7,5", "iPad7,6":                      return "iPad 6"
         case "iPad4,4", "iPad4,5", "iPad4,6":           return "iPad Mini 2"
         case "iPad4,7", "iPad4,8", "iPad4,9":           return "iPad Mini 3"
         case "iPad5,1", "iPad5,2":                      return "iPad Mini 4"
+        case "iPad11,1", "iPad11,2":                    return "iPad Mini 5"
         case "iPad6,3", "iPad6,4":                      return "iPad Pro 9.7 Inch"
         case "iPad6,7", "iPad6,8":                      return "iPad Pro 12.9 Inch"
         case "iPad7,1", "iPad7,2":                      return "iPad Pro 12.9 Inch (2nd Generation)"
         case "iPad7,3", "iPad7,4":                      return "iPad Pro 10.5 Inch"
+        case "iPad8,1", "iPad8,2", "iPad8,3", "iPad8,4": return "iPad Pro 11 Inch"
+        case "iPad8,9", "iPad8,10":                      return "iPad Pro 11 Inch (2nd Generation)"
+        case "iPad8,5", "iPad8,6", "iPad8,7", "iPad8,8": return "iPad Pro 12.9 Inch (3rd Generation)"
+        case "iPad8,11", "iPad8,12":                    return "iPad Pro 12.9 Inch (4th Generation)"
         default:                                        return identifier
+        }
+    }
+}
+
+public extension UIAlertController {
+    func addActions<S>(_ actions: S) where S: Sequence, S.Element == UIAlertAction {
+        for action in actions {
+            addAction(action)
         }
     }
 }

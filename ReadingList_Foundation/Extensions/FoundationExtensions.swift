@@ -1,4 +1,6 @@
 import Foundation
+import AVFoundation
+import UIKit
 import os.log
 
 public extension String {
@@ -40,6 +42,15 @@ public extension String {
         } else {
             try self.write(to: file, atomically: false, encoding: encoding)
         }
+    }
+
+    func attributedWithFont(_ font: UIFont) -> NSAttributedString {
+        return NSAttributedString(self, font: font)
+    }
+
+    func startIndex(ofFirstSubstring substring: String) -> Int? {
+        guard let substringRange = range(of: substring) else { return nil }
+        return distance(from: startIndex, to: substringRange.lowerBound)
     }
 }
 
@@ -85,6 +96,24 @@ public extension Int {
         guard let string = string else { return nil }
         self.init(string)
     }
+
+    init?(_ int16: Int16?) {
+        guard let int16 = int16 else { return nil }
+        self.init(int16)
+    }
+
+    init?(_ int32: Int32?) {
+        guard let int32 = int32 else { return nil }
+        self.init(int32)
+    }
+
+    var int32: Int32 {
+        Int32(self)
+    }
+
+    func itemCount(singular item: String) -> String {
+        return "\(self.string) \(item.pluralising(self))"
+    }
 }
 
 public extension NSSortDescriptor {
@@ -104,6 +133,12 @@ public extension Collection {
 }
 
 public extension URL {
+    func withHttps() -> URL? {
+        guard var urlComponents = URLComponents(url: self, resolvingAgainstBaseURL: false) else { return nil }
+        urlComponents.scheme = "https"
+        return urlComponents.url
+    }
+
     static func temporary(fileWithName fileName: String) -> URL {
         return URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
     }
@@ -150,6 +185,14 @@ public extension FileManager {
     }
 }
 
+public extension AVCaptureVideoPreviewLayer {
+    convenience init(_ session: AVCaptureSession, gravity: AVLayerVideoGravity, frame: CGRect) {
+        self.init(session: session)
+        self.frame = frame
+        videoGravity = gravity
+    }
+}
+
 public extension Array where Element: Equatable {
     func distinct() -> [Element] {
         var uniqueValues: [Element] = []
@@ -160,15 +203,32 @@ public extension Array where Element: Equatable {
         }
         return uniqueValues
     }
+
+    func appendingRemaining(_ array: [Element]) -> [Element] {
+        return self + array.subtracting(self)
+    }
+
+    func subtracting(_ array: [Element]) -> [Element] {
+        self.filter { !array.contains($0) }
+    }
+
+    func containsAll(_ items: [Element]) -> Bool {
+        return items.allSatisfy { self.contains($0) }
+    }
 }
 
 public extension Date {
-    init?(iso: String?) {
+    init?(_ dateString: String?, format: String) {
+        guard let dateString = dateString else { return nil }
         let dateStringFormatter = DateFormatter()
-        dateStringFormatter.dateFormat = "yyyy-MM-dd"
+        dateStringFormatter.dateFormat = format
         dateStringFormatter.locale = Locale(identifier: "en_US_POSIX")
-        guard let iso = iso, let date = dateStringFormatter.date(from: iso) else { return nil }
+        guard let date = dateStringFormatter.date(from: dateString) else { return nil }
         self.init(timeInterval: 0, since: date)
+    }
+
+    init?(iso: String?) {
+        self.init(iso, format: "yyyy-MM-dd")
     }
 
     func string(withDateFormat dateFormat: String) -> String {
@@ -252,6 +312,10 @@ public extension NSPredicate {
         }
     }
 
+    func not() -> NSPredicate {
+        return NSCompoundPredicate(notPredicateWithSubpredicate: self)
+    }
+
     static func or(_ orPredicates: [NSPredicate]) -> NSPredicate {
         return NSCompoundPredicate(orPredicateWithSubpredicates: orPredicates)
     }
@@ -272,5 +336,33 @@ public extension NSPredicate {
                 NSPredicate(fieldName: fieldName, containsSubstring: searchStringComponent)
             })
         })
+    }
+}
+
+public extension NSOrderedSet {
+    var isEmpty: Bool {
+        return count == 0 //swiftlint:disable:this empty_count
+    }
+}
+
+public extension Sequence {
+    func sorted<T>(byAscending sortableProperty: KeyPath<Element, T>) -> [Self.Element] where T: Comparable {
+        return sorted { $0[keyPath: sortableProperty] < $1[keyPath: sortableProperty] }
+    }
+
+    func sorted<T>(byAscending sortablePropertySelector: (Element) -> T) -> [Self.Element] where T: Comparable {
+        return sorted { sortablePropertySelector($0) < sortablePropertySelector($1) }
+    }
+
+    func distinct<T>(by keyPath: KeyPath<Element, T>) -> [Element] where T: Hashable {
+        var newArray = [Element]()
+        var seenItentifiers = Set<T>()
+        for element in self {
+            let identifier = element[keyPath: keyPath]
+            if seenItentifiers.insert(identifier).inserted {
+                newArray.append(element)
+            }
+        }
+        return newArray
     }
 }

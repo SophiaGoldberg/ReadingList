@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="17156" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17125"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" id="iN0-l3-epB" customClass="BookTableHeader" customModule="ReadingList" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="389" height="50"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="TO READ (34)" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ZVO-Sb-xiH">
+                    <rect key="frame" x="16" y="26" width="85.5" height="16"/>
+                    <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                    <color key="textColor" systemColor="secondaryLabelColor"/>
+                    <nil key="highlightedColor"/>
+                </label>
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="K9m-BB-WzR">
+                    <rect key="frame" x="361" y="22" width="20" height="20"/>
+                    <constraints>
+                        <constraint firstAttribute="width" secondItem="K9m-BB-WzR" secondAttribute="height" multiplier="1:1" id="p8V-oZ-H9A"/>
+                        <constraint firstAttribute="height" constant="20" id="z06-ie-oov"/>
+                    </constraints>
+                    <color key="tintColor" systemColor="secondaryLabelColor"/>
+                    <state key="normal" image="SortIcon"/>
+                    <connections>
+                        <action selector="sortButtonTapped:" destination="-2" eventType="touchUpInside" id="Ond-5L-6Jt"/>
+                    </connections>
+                </button>
+            </subviews>
+            <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
+            <constraints>
+                <constraint firstItem="ZVO-Sb-xiH" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" constant="16" id="M88-h7-ZCJ"/>
+                <constraint firstItem="ZVO-Sb-xiH" firstAttribute="bottom" secondItem="iN0-l3-epB" secondAttribute="bottom" constant="-8" id="Mda-a8-Vc7"/>
+                <constraint firstItem="vUN-kp-3ea" firstAttribute="trailing" secondItem="K9m-BB-WzR" secondAttribute="trailing" constant="8" id="gp5-Hm-eE7"/>
+                <constraint firstItem="K9m-BB-WzR" firstAttribute="bottom" secondItem="ZVO-Sb-xiH" secondAttribute="bottom" id="tR7-YW-VOv"/>
+            </constraints>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <connections>
+                <outlet property="label" destination="ZVO-Sb-xiH" id="9If-vZ-dPO"/>
+                <outlet property="sortButton" destination="K9m-BB-WzR" id="Urd-ah-y5a"/>
+            </connections>
+            <point key="canvasLocation" x="149.59999999999999" y="259.97001499250376"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="SortIcon" width="25" height="25"/>
+        <systemColor name="secondaryLabelColor">
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+    </resources>
+</document>

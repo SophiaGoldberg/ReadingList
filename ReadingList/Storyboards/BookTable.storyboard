@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="qYh-NF-gdy">
-    <device id="retina4_7" orientation="portrait">
-        <adaptation id="fullscreen"/>
-    </device>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="15505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="qYh-NF-gdy">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14460.20"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15509"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -14,7 +12,7 @@
             <objects>
                 <navigationController id="BJH-LT-6o4" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" largeTitles="YES" id="7ZT-Qa-UWK">
-                        <rect key="frame" x="0.0" y="20" width="375" height="96"/>
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="96"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <connections>
@@ -29,7 +27,7 @@
         <scene sceneID="TqS-ZX-Pkx">
             <objects>
                 <tableViewController extendedLayoutIncludesOpaqueBars="YES" definesPresentationContext="YES" id="4HX-WC-tQz" customClass="BookTable" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" allowsSelectionDuringEditing="YES" allowsMultipleSelectionDuringEditing="YES" rowHeight="92" sectionHeaderHeight="18" sectionFooterHeight="18" id="KXn-Og-bAI">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" allowsSelectionDuringEditing="YES" allowsMultipleSelectionDuringEditing="YES" rowHeight="92" sectionHeaderHeight="60" estimatedSectionHeaderHeight="60" sectionFooterHeight="1" id="KXn-Og-bAI">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
@@ -38,14 +36,7 @@
                             <outlet property="delegate" destination="4HX-WC-tQz" id="xSO-ff-FJD"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="Read State Header" id="L1D-Rs-V49">
-                        <barButtonItem key="leftBarButtonItem" systemItem="edit" id="nhd-kN-wZw"/>
-                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="xwc-GG-HVK">
-                            <connections>
-                                <action selector="addWasPressed:" destination="4HX-WC-tQz" id="Xci-Dd-kOE"/>
-                            </connections>
-                        </barButtonItem>
-                    </navigationItem>
+                    <navigationItem key="navigationItem" title="Read State Header" largeTitleDisplayMode="never" id="L1D-Rs-V49"/>
                     <connections>
                         <segue destination="myb-KF-3dK" kind="showDetail" identifier="showDetail" id="bOj-r5-ku9"/>
                     </connections>
@@ -80,6 +71,6 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="bOj-r5-ku9"/>
+        <segue reference="Uat-sc-yvW"/>
     </inferredMetricsTieBreakers>
 </document>

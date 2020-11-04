@@ -37,7 +37,7 @@ class SyncCoordinator {
     private let upstreamChangeProcessors: [UpstreamChangeProcessor]
     private let downstreamChangeProcessor: BookDownloader
 
-    let reachability = Reachability()!
+    let reachability = try! Reachability()
     let remote = BookCloudKitRemote()
 
     private var notificationObservers = [NSObjectProtocol]()

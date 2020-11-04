@@ -27,7 +27,7 @@ extension Book {
 
     @objc func validateLanguageCode(_ value: AutoreleasingUnsafeMutablePointer<AnyObject?>) throws {
         guard let languageCode = value.pointee as? String else { return }
-        if Language.byIsoCode[languageCode] == nil {
+        if LanguageIso639_1(rawValue: languageCode) == nil {
             throw BookValidationError.invalidLanguageCode.NSError()
         }
     }
@@ -57,14 +57,8 @@ extension Book {
                 throw BookValidationError.invalidReadDates.NSError()
             }
         }
-        if readState != .reading && currentPage != nil {
+        if readState != .reading && (currentPage != nil || currentPercentage != nil) {
             throw BookValidationError.presentCurrentPage.NSError()
-        }
-        if googleBooksId == nil && manualBookId == nil {
-            throw BookValidationError.missingIdentifier.NSError()
-        }
-        if googleBooksId != nil && manualBookId != nil {
-            throw BookValidationError.conflictingIdentifiers.NSError()
         }
         if keysPendingRemoteUpdate != 0 && remoteIdentifier == nil {
             throw BookValidationError.bitmaskPresentWithoutRemoteIdentifier.NSError()
@@ -78,10 +72,9 @@ enum BookValidationError: Int {
     case invalidReadDates = 3
     case invalidLanguageCode = 4
     case missingIdentifier = 5
-    case conflictingIdentifiers = 6
-    case noAuthors = 7
-    case presentCurrentPage = 8
-    case bitmaskPresentWithoutRemoteIdentifier = 9
+    case noAuthors = 6
+    case presentCurrentPage = 7
+    case bitmaskPresentWithoutRemoteIdentifier = 8
 }
 
 extension BookValidationError {
@@ -91,7 +84,6 @@ extension BookValidationError {
         case .invalidIsbn: return "Isbn13 must be a valid ISBN"
         case .invalidReadDates: return "StartedReading and FinishedReading must align with ReadState"
         case .invalidLanguageCode: return "LanguageCode must be an ISO-639.1 value"
-        case .conflictingIdentifiers: return "GoogleBooksId and ManualBooksId cannot both be non nil"
         case .missingIdentifier: return "GoogleBooksId and ManualBooksId cannot both be nil"
         case .noAuthors: return "Authors array must be non-empty"
         case .presentCurrentPage: return "CurrentPage must be nil when not Currently Reading"

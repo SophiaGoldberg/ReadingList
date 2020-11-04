@@ -1,9 +1,7 @@
 xcuserdata
 *.xcuserstate
 *.xcodeproj/*
-*.xcworkspace/*
 .DS_Store
-Pods/
 screenshots.html
 fastlane/report.xml
 fastlane/test_output
@@ -14,3 +12,4 @@ fastlane/Preview.html
 *.dSYM.zip
 .idea
 fabric
+AuthKey_K665GM82PP.p8

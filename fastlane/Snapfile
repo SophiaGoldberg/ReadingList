@@ -1,23 +1,25 @@
 devices([
-	"iPhone SE",
-	"iPhone 8",
-	"iPhone 8 Plus",
-        "iPhone XS",
-	"iPhone XS Max",
-	"iPad Pro (9.7-inch)",
-	"iPad Pro (12.9-inch)"
+	#"iPhone SE (1st generation)",
+	#"iPhone 8",
+	#"iPhone 8 Plus",
+	#"iPhone 11 Pro",
+	#"iPhone 11 Pro Max",
+	#"iPad Pro (9.7-inch)",
+	#"iPad Pro (12.9-inch) (3rd generation)",
+	"iPad Pro (12.9-inch) (2nd generation)"
 ])
 languages([
   "en-GB"
 ])
-scheme("ReadingList_Screenshots")
-workspace("ReadingList.xcworkspace")
-clear_previous_screenshots(true)
+scheme("ReadingList_UITests")
+project("ReadingList.xcodeproj")
+ios_version("14.0")
+#clear_previous_screenshots(true)
 reinstall_app(true)
-concurrent_simulators(true)
+concurrent_simulators(false)
 
 # Arguments to pass to the app on launch. See https://docs.fastlane.tools/actions/snapshot/#launch-arguments
-# launch_arguments(["-favColor red"])
+#launch_arguments(["--reset", "--UITests", "--UITests_PopulateData", "--UITests_Screenshots", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryXL"])
 
 # For more information about all available options run
 # fastlane action snapshot

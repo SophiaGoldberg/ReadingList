@@ -1,6 +1,6 @@
 excluded:
   - Pods
-  - ReadingList_Screenshots/SnapshotHelper.swift
+  - ReadingList_UITests/SnapshotHelper.swift
 identifier_name:
   excluded:
     - id
@@ -50,3 +50,6 @@ disabled_rules:
 
   # This is a bit of an opinionated rule...  
   - nesting 
+
+  # Implicit returns are not always better
+  - implicit_return

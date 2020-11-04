@@ -16,7 +16,7 @@ public extension ModelVersion {
     }
 
     var successor: Self? {
-        let index = Self.allCases.index(of: self)!
+        let index = Self.allCases.firstIndex(of: self)!
         let nextIndex = Self.allCases.index(after: index)
         guard nextIndex != Self.allCases.endIndex else { return nil }
         return Self.allCases[nextIndex]

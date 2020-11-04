@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="15705" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="wWH-Ym-HSc">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15706"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--BookDetails-->
+        <scene sceneID="ajH-QG-QxI">
+            <objects>
+                <viewControllerPlaceholder storyboardName="BookDetails" id="7z6-rj-KqQ" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="kNh-RF-V3d" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-9288" y="2222"/>
+        </scene>
+        <!--Organize-->
+        <scene sceneID="WvJ-QL-gyx">
+            <objects>
+                <tableViewController extendedLayoutIncludesOpaqueBars="YES" definesPresentationContext="YES" clearsSelectionOnViewWillAppear="NO" id="RiX-qo-4E3" customClass="Organize" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="50" estimatedSectionHeaderHeight="50" sectionFooterHeight="1" id="yuf-Gn-OLe">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
+                        <prototypes>
+                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" reuseIdentifier="ListCell" textLabel="RhS-Gr-Fnz" detailTextLabel="kCO-LL-KNN" style="IBUITableViewCellStyleSubtitle" id="7Oo-C0-bqu">
+                                <rect key="frame" x="0.0" y="55.5" width="375" height="57.5"/>
+                                <autoresizingMask key="autoresizingMask"/>
+                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="7Oo-C0-bqu" id="gZx-cN-c1N">
+                                    <rect key="frame" x="0.0" y="0.0" width="348" height="57.5"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <subviews>
+                                        <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="My Wish List" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" id="RhS-Gr-Fnz">
+                                            <rect key="frame" x="16" y="9" width="97.5" height="20.5"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
+                                            <nil key="textColor"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
+                                        <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="12 books" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" id="kCO-LL-KNN">
+                                            <rect key="frame" x="16" y="32.5" width="50.5" height="14.5"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <fontDescription key="fontDescription" style="UICTFontTextStyleCaption1"/>
+                                            <nil key="textColor"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
+                                    </subviews>
+                                </tableViewCellContentView>
+                                <connections>
+                                    <segue destination="ggN-hf-l8Q" kind="show" identifier="selectList" id="QZG-yd-ESl">
+                                        <segue key="commit" inheritsFrom="parent" id="lDA-ec-R01"/>
+                                        <segue key="preview" inheritsFrom="commit" id="Hak-Xx-6IN"/>
+                                    </segue>
+                                </connections>
+                            </tableViewCell>
+                        </prototypes>
+                        <connections>
+                            <outlet property="dataSource" destination="RiX-qo-4E3" id="wE0-n2-eWY"/>
+                            <outlet property="delegate" destination="RiX-qo-4E3" id="cg8-Np-mai"/>
+                        </connections>
+                    </tableView>
+                    <navigationItem key="navigationItem" title="Organize" id="U1p-Q1-su7">
+                        <barButtonItem key="backBarButtonItem" title=" " id="5kO-5j-wCF"/>
+                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="WGn-Bx-0Kc">
+                            <connections>
+                                <action selector="addWasTapped:" destination="RiX-qo-4E3" id="b0h-iP-aZ5"/>
+                            </connections>
+                        </barButtonItem>
+                    </navigationItem>
+                </tableViewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="lLG-42-1Aa" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-9233" y="1373"/>
+        </scene>
+        <!--My List-->
+        <scene sceneID="31O-I5-KfZ">
+            <objects>
+                <tableViewController title="My List" extendedLayoutIncludesOpaqueBars="YES" definesPresentationContext="YES" id="ggN-hf-l8Q" customClass="ListBookTable" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" rowHeight="92" estimatedRowHeight="92" sectionHeaderHeight="50" estimatedSectionHeaderHeight="50" sectionFooterHeight="1" estimatedSectionFooterHeight="1" id="gO0-S4-wGF">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
+                        <sections/>
+                        <connections>
+                            <outlet property="dataSource" destination="ggN-hf-l8Q" id="Eni-I7-vfa"/>
+                            <outlet property="delegate" destination="ggN-hf-l8Q" id="Yfx-2B-Ea9"/>
+                        </connections>
+                    </tableView>
+                    <navigationItem key="navigationItem" title="List Title" largeTitleDisplayMode="never" id="jSI-Qd-fr4"/>
+                    <connections>
+                        <segue destination="7z6-rj-KqQ" kind="showDetail" identifier="showDetail" id="C7a-WA-Ju3"/>
+                    </connections>
+                </tableViewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="EwB-xs-5dO" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-8366" y="1373"/>
+        </scene>
+        <!--Themed Navigation Controller-->
+        <scene sceneID="u2M-L9-7Kb">
+            <objects>
+                <navigationController id="WHn-Om-NYv" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" largeTitles="YES" id="i2G-m8-7nj">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="96"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <connections>
+                        <segue destination="RiX-qo-4E3" kind="relationship" relationship="rootViewController" id="Zpp-z8-Wyc"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Gva-I9-Dci" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-10130" y="1374"/>
+        </scene>
+        <!--Organize-->
+        <scene sceneID="tj0-M4-c5I">
+            <objects>
+                <splitViewController id="wWH-Ym-HSc" customClass="ThemedSplitViewController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                    <tabBarItem key="tabBarItem" tag="2" title="Organize" image="organise" selectedImage="organise-filled" id="ofv-YQ-PuH"/>
+                    <connections>
+                        <segue destination="WHn-Om-NYv" kind="relationship" relationship="masterViewController" id="vSL-Ob-iCW"/>
+                        <segue destination="7z6-rj-KqQ" kind="relationship" relationship="detailViewController" id="xJE-Yc-3El"/>
+                    </connections>
+                </splitViewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="7JL-re-Mti" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-11076" y="1709"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="organise" width="25" height="25"/>
+        <image name="organise-filled" width="25" height="25"/>
+    </resources>
+    <inferredMetricsTieBreakers>
+        <segue reference="QZG-yd-ESl"/>
+        <segue reference="C7a-WA-Ju3"/>
+    </inferredMetricsTieBreakers>
+</document>

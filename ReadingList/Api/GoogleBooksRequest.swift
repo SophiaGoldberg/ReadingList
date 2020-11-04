@@ -1,8 +1,9 @@
 import Foundation
+import ReadingList_Foundation
 
 enum GoogleBooksRequest {
 
-    case searchText(String)
+    case searchText(String, LanguageIso639_1?)
     case searchIsbn(String)
     case fetch(String)
     case coverImage(String, CoverType)
@@ -13,21 +14,24 @@ enum GoogleBooksRequest {
         case small = 2
     }
 
-    // The base URL for GoogleBooks API v1 requests
-    private static let apiBaseUrl = URL(string: { //swiftlint:disable:this trailing_closure
+    private static let apiBaseUrl = URL(string: {
         #if DEBUG
         if CommandLine.arguments.contains("--UITests_MockHttpCalls") {
             return "http://localhost:8080/"
-        } else {
-            return "https://www.googleapis.com/"
         }
-        #else
-        return "https://www.googleapis.com/"
         #endif
+        return "https://www.googleapis.com/"
     }())!
-    private static let googleBooksBaseUrl = URL(string: "https://books.google.com/")!
+    private static let googleBooksBaseUrl = URL(string: {
+        #if DEBUG
+        if CommandLine.arguments.contains("--UITests_MockHttpCalls") {
+            return "http://localhost:8080/"
+        }
+        #endif
+        return "https://books.google.com/"
+    }())!
 
-    private static let searchResultFields = "items(id,volumeInfo(title,authors,industryIdentifiers,categories,imageLinks/thumbnail))"
+    private static let searchResultFields = "items(id,volumeInfo(title,subtitle,authors,industryIdentifiers,categories,imageLinks/thumbnail))"
 
     var baseUrl: URL {
         switch self {
@@ -53,9 +57,15 @@ enum GoogleBooksRequest {
 
     var queryString: String? {
         switch self {
-        case let .searchText(searchString):
+        case let .searchText(searchString, languageRestriction):
             let encodedQuery = searchString.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
-            return "q=\(encodedQuery)&maxResults=40&fields=\(GoogleBooksRequest.searchResultFields)"
+            let langQuery: String
+            if let languageCode = languageRestriction {
+                langQuery = "&langRestrict=\(languageCode.rawValue)"
+            } else {
+                langQuery = ""
+            }
+            return "q=\(encodedQuery)&maxResults=40&fields=\(GoogleBooksRequest.searchResultFields)\(langQuery)"
         case let .searchIsbn(isbn):
             return "q=isbn:\(isbn)&maxResults=40&fields=\(GoogleBooksRequest.searchResultFields)"
         case .fetch:
@@ -75,7 +85,7 @@ enum GoogleBooksRequest {
         }
     }
 
-    var url: URL {
-        return URL(string: pathAndQuery, relativeTo: baseUrl)!
+    var url: URL? {
+        return URL(string: pathAndQuery, relativeTo: baseUrl)
     }
 }

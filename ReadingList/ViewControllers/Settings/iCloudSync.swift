@@ -12,25 +12,27 @@ class CloudSync: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         monitorThemeSetting()
-        enabledSwitch.isOn = UserDefaults.standard[.iCloudSyncEnabled]
-        if !UserDefaults.standard[.iCloudSyncEnabled] && AppDelegate.shared.syncCoordinator?.reachability.connection == .none {
+        enabledSwitch.isOn = GeneralSettings.iCloudSyncEnabled
+        if !GeneralSettings.iCloudSyncEnabled && AppDelegate.shared.syncCoordinator?.reachability.connection == .none {
             enabledSwitch.isEnabled = false
         }
         NotificationCenter.default.addObserver(self, selector: #selector(networkConnectivityDidChange), name: .reachabilityChanged, object: nil)
     }
 
     @objc private func networkConnectivityDidChange() {
-        guard !UserDefaults.standard[.iCloudSyncEnabled] else { return }
+        guard !GeneralSettings.iCloudSyncEnabled else { return }
         enabledSwitch.isEnabled = AppDelegate.shared.syncCoordinator?.reachability.connection != .none
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        let theme = UserDefaults.standard[.theme]
-        cell.defaultInitialise(withTheme: theme)
-        cell.contentView.subviews.forEach {
-            guard let label = $0 as? UILabel else { return }
-            label.textColor = theme.titleTextColor
+        if #available(iOS 13.0, *) { } else {
+            let theme = GeneralSettings.theme
+            cell.defaultInitialise(withTheme: theme)
+            cell.contentView.subviews.forEach {
+                guard let label = $0 as? UILabel else { return }
+                label.textColor = theme.titleTextColor
+            }
         }
         return cell
     }
@@ -57,7 +59,7 @@ class CloudSync: UITableViewController {
                     } else if self.nonRemoteBooksExistLocally() {
                         self.requestSyncMergeAction()
                     } else {
-                        UserDefaults.standard[.iCloudSyncEnabled] = true
+                        GeneralSettings.iCloudSyncEnabled = true
                         AppDelegate.shared.syncCoordinator!.start()
                     }
                 }
@@ -81,7 +83,7 @@ class CloudSync: UITableViewController {
             with the books already in iCloud.
             """, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Merge", style: .default) { _ in
-            UserDefaults.standard[.iCloudSyncEnabled] = true
+            GeneralSettings.iCloudSyncEnabled = true
             AppDelegate.shared.syncCoordinator!.start()
         })
         alert.addAction(UIAlertAction(title: "Replace", style: .destructive) { [unowned self] _ in
@@ -102,7 +104,7 @@ class CloudSync: UITableViewController {
             """, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Replace", style: .destructive) { _ in
             PersistentStoreManager.delete(type: Book.self)
-            UserDefaults.standard[.iCloudSyncEnabled] = true
+            GeneralSettings.iCloudSyncEnabled = true
             AppDelegate.shared.syncCoordinator!.start()
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [unowned self] _ in

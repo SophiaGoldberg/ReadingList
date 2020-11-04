@@ -1,23 +1,29 @@
 default_platform(:ios)
-xcversion(version: "10.1")
+xcversion(version: "12.1.1")
 
 platform :ios do
 
   desc "Configures Fabric, builds the project file and sets the build number from git."
   lane :preprocess do
-    sh "./configure_fabric.sh"
     sh "cd .. && mint run yonaskolb/xcodegen"
-    sh "cd .. && pod install"
     increment_build_number(build_number: number_of_commits)
   end
 
   lane :ci do
-    test
-    configure_keychain
-    build_app(workspace: "ReadingList.xcworkspace", scheme: "ReadingList")
+    # testing is failing on Xcode 11 with an error about no suitable libswiftUIKit.dylib...
+    # test
+    setup_travis
+    match(type: "appstore", app_identifier: ["com.andrewbennet.books", "com.andrewbennet.books.ReadingListWidget"])
+    build_app(
+        project: "ReadingList.xcodeproj",
+        scheme: "ReadingList"
+    )
   end
 
   lane :test do
+    # Disable hardware keyboard connection during UITests.
+    sh "defaults write com.apple.iphonesimulator ConnectHardwareKeyboard 0"
+
     # run tests synchronously as a bug in xcpretty will hide test results when multiple devices are used
     scan(
       scheme: "ReadingList",
@@ -28,8 +34,15 @@ platform :ios do
 
   desc "Uploads the previously built binary to TestFlight and tags it"
   lane :upload_build do
+    app_store_connect_api_key(
+      key_id: "K665GM82PP",
+      issuer_id: "69a6de81-4e3c-47e3-e053-5b8c7c11a4d1",
+      key_filepath: "./AuthKey_K665GM82PP.p8",
+      duration: 1200, # optional
+      in_house: false, # optional but may be required if using match/sigh
+    )
+
     upload_to_testflight(skip_submission: true, skip_waiting_for_build_processing: true)
-    tag_build
   end
 
   desc "Creates and pushes a tag like 'build/1583'"
@@ -54,7 +67,7 @@ platform :ios do
 
   desc "Create framed screenshots for a range of devices"
   lane :snaps do
-    snapshot
+    snapshot(xcargs: '-only-testing:ReadingList_UITests/Screenshots', override_status_bar: true)
     frame_screenshots(white: true)
   end
 

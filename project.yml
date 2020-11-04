@@ -5,20 +5,102 @@ options:
   usesTabs: false
   indentWith: 4
   bundleIdPrefix: com.andrewbennet
+  groupOrdering: 
+    - order: [ReadingList, ReadingList_UITests, ReadingList_UnitTests, ReadingListWidget, Packages, Debug, fastlane]
+
+packages:
+  ReadingList_Foundation:
+    path: ReadingList_Foundation
+  Cosmos:
+    url: https://github.com/evgenyneu/Cosmos.git
+    minorVersion: 23.0.0
+  SwiftyStoreKit:
+    url: https://github.com/bizz84/SwiftyStoreKit.git
+    minorVersion: 0.16.0
+  Swifter:
+    url: https://github.com/httpswift/swifter.git
+    branch: stable 
+  Eureka:
+    url: https://github.com/xmartlabs/Eureka.git
+    minorVersion: 5.3.0
+  ImageRow:
+    url: https://github.com/EurekaCommunity/ImageRow.git
+    branch: master
+  WhatsNewKit:
+    url: https://github.com/SvenTiigi/WhatsNewKit.git
+    minorVersion: 1.3.5
+  PersistedPropertyWrapper:
+    url: https://github.com/AndrewBennet/PersistedPropertyWrapper.git
+    minorVersion: 2.0.0
+  Regex:
+    url: https://github.com/sharplet/Regex.git
+    minorVersion: 2.1.1
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    minorVersion: 7.0.0
+  Promises:
+    url: https://github.com/google/promises.git
+    minorVersion: 1.2.0
+  CHCSVParser:
+    url: https://github.com/AndrewBennet/CHCSVParser.git # Fork with SPM support
+    branch: master
+  SVProgressHUD:
+    url: https://github.com/sereivoanyong/SVProgressHUD.git # Fork with SPM support
+    branch: master
+  Reachability:
+    url: https://github.com/ashleymills/Reachability.swift.git
+    minorVersion: 5.1.0
+
+fileGroups:
+  - Debug/
+  - fastlane/
+  - README.md
+  - project.yml
 
 targets:
   ReadingList:
     type: application
     platform: iOS
-    deploymentTarget: 11.0
-    sources: [ReadingList]
+    deploymentTarget: 12.0
+    sources:
+      - path: ReadingList
+        excludes:
+          - Debug
+      - path: ReadingListWidget/WidgetKind.swift
     scheme:
       testTargets:
         - ReadingList_UnitTests
         - ReadingList_UITests
+      postActions:
+        # See https://github.com/firebase/firebase-ios-sdk/issues/6472#issuecomment-694449182
+        - settingsTarget: ReadingList
+          script: |
+                  rm -rf "${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Frameworks/FirebaseAnalytics.framework"
+                    "${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Frameworks/GoogleAppMeasurement.framework"
+                    "${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Frameworks/FIRAnalyticsConnector.framework"
+                    "${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns/FirebaseAnalytics.framework"
+                    "${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns/GoogleAppMeasurement.framework"
+                    "${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns/FIRAnalyticsConnector.framework"
     dependencies:
       - sdk: StoreKit.framework
-      - target: ReadingList_Foundation
+      - target: ReadingListWidget
+      - package: ReadingList_Foundation
+      - package: Cosmos
+      - package: SwiftyStoreKit
+      - package: Eureka
+      - package: ImageRow
+      - package: WhatsNewKit
+      - package: PersistedPropertyWrapper
+      - package: Regex
+      - package: Promises
+      - package: CHCSVParser
+      - package: SVProgressHUD
+      - package: Reachability
+      - package: Firebase
+        product: FirebaseCrashlytics
+      - package: Firebase
+        product: FirebaseAnalytics
+      
     preBuildScripts:
       - name: SwiftLint
         script: |
@@ -26,27 +108,35 @@ targets:
                   "/usr/local/bin/swiftlint" --path "${PROJECT_DIR}"
                 fi
     postBuildScripts:
-      - name: "[CP] Embed Pods Frameworks"
-        script:
-      - name: Run Fabric Script
+      - name: "Copy Debug Files"
+        script: |
+                BUILD_APP_DIR=${BUILT_PRODUCTS_DIR}/${FULL_PRODUCT_NAME}
+                if [ "$CONFIGURATION" == "Debug" ]; then
+                  cp "$SRCROOT/Debug/examplebooks.csv" "$BUILD_APP_DIR/examplebooks.csv"
+                  cp "$SRCROOT/Debug/example_barcode.jpg" "$BUILD_APP_DIR/example_barcode.jpg"
+                fi
+      - name: Run Crashlytics Script
         inputFiles: [$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)]
         script: |
-                # Run Fabric script: added here when built for deployment.
-                # FABRIC_SCRIPT_PLACEHOLDER
+                "${BUILD_DIR%Build/*}SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
     settings:
       base:
-        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: $(inherited)
+        CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: YES
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_ENTITLEMENTS: ReadingList/ReadingList.entitlements
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
         DEVELOPMENT_TEAM: YPDEV2E775
         PRODUCT_BUNDLE_IDENTIFIER: com.andrewbennet.books
+        OTHER_LDFLAGS: -ObjC
       configs:
         Debug:
+          # Stupid build errors from Firebase without this line
+          EXCLUDED_ARCHS[sdk=iphonesimulator*]: arm64
           PROVISIONING_PROFILE_SPECIFIER: match Development com.andrewbennet.books
           OTHER_SWIFT_FLAGS: $(inherited) "-D" "DEBUG"
         Release:
           PROVISIONING_PROFILE_SPECIFIER: match AppStore com.andrewbennet.books
-          CODE_SIGN_IDENTITY[sdk=iphoneos*]: "iPhone Distribution: Andrew Bennet (YPDEV2E775)"
+          CODE_SIGN_IDENTITY[sdk=iphoneos*]: "Apple Distribution: Andrew Bennet (YPDEV2E775)"
           OTHER_SWIFT_FLAGS: $(inherited) "-D" "RELEASE"
     attributes:
       SystemCapabilities:
@@ -55,44 +145,58 @@ targets:
         com.apple.InAppPurchase:
           enabled: 1
 
-  ReadingList_Foundation:
-    type: framework
-    platform: iOS
-    deploymentTarget: 11.0
-    sources: [ReadingList_Foundation]
-
   ReadingList_UnitTests:
     type: bundle.unit-test
     platform: iOS
-    deploymentTarget: 11.0
+    deploymentTarget: 12.0
     sources: [ReadingList_UnitTests]
     dependencies:
       - target: ReadingList
-    settings:
-      # These settings are added when Xcode creates a new project with test targets.
-      # See https://stackoverflow.com/a/30939244/5513562
-      BUNDLE_LOADER: $TEST_HOST
-      TEST_HOST: $(BUILT_PRODUCTS_DIR)/ReadingList.app/ReadingList
 
   ReadingList_UITests:
     type: bundle.ui-testing
     platform: iOS
-    deploymentTarget: 11.0
+    deploymentTarget: 12.0
     sources:
       - path: ReadingList_UITests
       - path: ReadingList/Api/GoogleBooksRequest.swift
     dependencies:
       - target: ReadingList
-
-  ReadingList_Screenshots:
-    type: bundle.ui-testing
-    platform: iOS
-    deploymentTarget: 11.0
-    sources:
-      - path: ReadingList_Screenshots
-      - path: ReadingList_UITests/ReadingListApp.swift
-    dependencies:
-      - target: ReadingList
+      - package: Swifter
     scheme:
       testTargets:
-        - ReadingList_Screenshots
+        - ReadingList_UITests
+
+  ReadingListWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: 14.0
+    sources:
+      - path: ReadingListWidget
+      - path: ReadingList/Data/SharedBookData.swift
+      - path: ReadingList/Startup/ProprietaryURLManager.swift
+    dependencies:
+      - sdk: SwiftUI.framework
+      - sdk: WidgetKit.framework
+      - package: PersistedPropertyWrapper
+    postBuildScripts:
+      - name: "Copy Debug Files"
+        script: |
+                BUILD_APP_DIR=${BUILT_PRODUCTS_DIR}/${FULL_PRODUCT_NAME}
+                if [ "$CONFIGURATION" == "Debug" ]; then
+                  cp "$SRCROOT/Debug/shared_current-books.json" "$BUILD_APP_DIR/shared_current-books.json"
+                  cp "$SRCROOT/Debug/shared_finished-books.json" "$BUILD_APP_DIR/shared_finished-books.json"
+                fi
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.andrewbennet.books.ReadingListWidget
+        DEVELOPMENT_TEAM: YPDEV2E775
+        CODE_SIGN_ENTITLEMENTS: ReadingListWidget/ReadingListWidget.entitlements
+      configs:
+        Debug:
+          CODE_SIGN_STYLE: Automatic
+        Release:
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: match AppStore com.andrewbennet.books.ReadingListWidget
+          CODE_SIGN_IDENTITY[sdk=iphoneos*]: "Apple Distribution: Andrew Bennet (YPDEV2E775)"
+

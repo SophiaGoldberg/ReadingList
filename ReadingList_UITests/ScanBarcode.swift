@@ -20,7 +20,9 @@ class ScanBarcode: XCTestCase {
     private func scanBarcode(app: ReadingListApp) {
         app.clickTab(.toRead)
         app.navigationBars["To Read"].buttons["Add"].tap()
-        app.sheets.buttons["Scan Barcode"].tap()
+        let scanButton = app.sheets.buttons["Scan Barcode"]
+        XCTAssert(scanButton.waitForExistence(timeout: 1))
+        scanButton.tap()
     }
 
     func testBarcodeScannerNormal() {
@@ -31,7 +33,7 @@ class ScanBarcode: XCTestCase {
         // Normal mode
         scanBarcode(app: app)
         let cancel = app.navigationBars.element(boundBy: 0).buttons["Cancel"]
-        _ = cancel.waitForExistence(timeout: 1)
+        XCTAssert(cancel.waitForExistence(timeout: 5))
         cancel.tap()
     }
 
@@ -43,7 +45,7 @@ class ScanBarcode: XCTestCase {
         // Valid ISBN
         scanBarcode(app: app)
         let done = app.navigationBars.element(boundBy: 0).buttons["Done"]
-        _ = done.waitForExistence(timeout: 1)
+        XCTAssert(done.waitForExistence(timeout: 5))
         done.tap()
     }
 
@@ -54,7 +56,7 @@ class ScanBarcode: XCTestCase {
 
         // Not found ISBN
         scanBarcode(app: app)
-        _ = app.alerts.element(boundBy: 0).waitForExistence(timeout: 5)
+        XCTAssert(app.alerts.element(boundBy: 0).waitForExistence(timeout: 5))
         XCTAssertEqual(app.alerts.count, 1)
         let noMatchAlert = app.alerts.element(boundBy: 0)
         XCTAssertEqual("No Exact Match", noMatchAlert.label)
@@ -63,7 +65,7 @@ class ScanBarcode: XCTestCase {
 
     }
 
-    func testBarcodeScannerExistingIsbn() {
+     func testBarcodeScannerExistingIsbn() {
         let app = ReadingListApp()
         // The ISBN below is contained in the test data
         app.launchArguments = defaultLaunchArguments + ["--UITests_PopulateData", barcodeSimulationArgument, "9780547345666"]
@@ -71,9 +73,9 @@ class ScanBarcode: XCTestCase {
 
         // Existing ISBN
         scanBarcode(app: app)
-        _ = app.alerts.element(boundBy: 0).waitForExistence(timeout: 2)
-        XCTAssertEqual(app.alerts.count, 1)
         let duplicateAlert = app.alerts.element(boundBy: 0)
+        XCTAssert(duplicateAlert.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.alerts.count, 1)
         XCTAssertEqual("Book Already Added", duplicateAlert.label)
         duplicateAlert.buttons["Cancel"].tap()
         app.navigationBars.element(boundBy: 0).buttons["Cancel"].tap()

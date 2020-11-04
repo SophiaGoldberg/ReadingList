@@ -1,20 +1,21 @@
 import UIKit
 import MessageUI
+import SwiftUI
 import ReadingList_Foundation
-import Crashlytics
+import FirebaseCrashlytics
 
-class Settings: UITableViewController {
+final class Settings: UITableViewController {
 
     static let appStoreAddress = "itunes.apple.com/gb/app/reading-list-book-tracker/id1217139955"
     static let feedbackEmailAddress = "feedback@readinglist.app"
-    private let dataIndexPath = IndexPath(row: 2, section: 1)
+    static let importExportIndexPath = IndexPath(row: 2, section: 1)
 
     @IBOutlet private var headerLabels: [UILabel]!
     @IBOutlet private weak var versionLabel: UILabel!
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        versionLabel.text = "v\(BuildInfo.appConfiguration.versionAndConfiguration)"
+        versionLabel.text = "v\(BuildInfo.thisBuild.versionAndConfiguration)"
         monitorThemeSetting()
 
         #if DEBUG
@@ -31,13 +32,17 @@ class Settings: UITableViewController {
 
     #if DEBUG
     @objc func onLongPressHeader(_ recognizer: UILongPressGestureRecognizer) {
-        present(DebugForm().inThemedNavController(), animated: true, completion: nil)
+        if #available(iOS 13.0, *) {
+            present(UIHostingController(rootView: DebugSettings { [weak self] in
+                self?.dismiss(animated: true, completion: nil)
+            }), animated: true, completion: nil)
+        }
     }
     #endif
 
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         guard motion == .motionShake else { return }
-        guard BuildInfo.appConfiguration != .appStore else { return }
+        guard BuildInfo.thisBuild.type != .appStore else { return }
         let alert = UIAlertController(title: "Perform Test Crash?", message: """
             For testing purposes, you can trigger a crash. This can be used to verify \
             that the crash reporting tools are working correctly.
@@ -45,7 +50,7 @@ class Settings: UITableViewController {
             Note: you are only seeing this because you are running a beta version of this app.
             """, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Crash", style: .destructive) { _ in
-            Crashlytics.sharedInstance().crash()
+            fatalError("Test Crash")
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         present(alert, animated: true)
@@ -59,16 +64,19 @@ class Settings: UITableViewController {
     }
 
     override func initialise(withTheme theme: Theme) {
+        if #available(iOS 13.0, *) { return }
         super.initialise(withTheme: theme)
         headerLabels.forEach { $0.textColor = theme.titleTextColor }
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        cell.defaultInitialise(withTheme: UserDefaults.standard[.theme])
+        if #available(iOS 13.0, *) { } else {
+            cell.defaultInitialise(withTheme: GeneralSettings.theme)
+        }
         if splitViewController?.isSplit == true {
             // In split mode, change the cells a little to look more like the standard iOS settings app
-            cell.selectedBackgroundView = UIView(backgroundColor: UIColor(fromHex: 5350396))
+            cell.selectedBackgroundView = UIView(backgroundColor: UIColor(.splitViewCellSelection))
             cell.textLabel!.highlightedTextColor = .white
             cell.accessoryType = .none
         }
@@ -83,14 +91,6 @@ class Settings: UITableViewController {
             return
         }
         tableView.deselectRow(at: indexPath, animated: true)
-    }
-
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let url = sender as? URL, let nav = segue.destination as? UINavigationController, let data = nav.viewControllers.first as? DataVC {
-            // In order to trigger an import from an external source, the presenting segue's sender is the URL of the file.
-            // Set this on the Data vc, which will load the file the first time the VC appears after the import URL is set.
-            data.importUrl = url
-        }
     }
 }
 

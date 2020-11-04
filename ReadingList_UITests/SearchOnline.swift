@@ -32,13 +32,15 @@ class SearchOnlineTests: XCTestCase {
 
         performSearch(app)
         let toolbar = app.toolbars["Toolbar"]
-        toolbar.buttons["Select Many"].tap()
+        // The Select Many button has spaces padding it, so don't do an exact sting comparison - just check it contains the Select Many string.
+        let selectManyButton = toolbar.buttons.allElementsBoundByIndex.first { $0.label.contains("Select Many") }
+        selectManyButton!.tap()
 
         app.tables.cells.element(boundBy: 0).tap()
         app.tables.cells.element(boundBy: 1).tap()
         toolbar.buttons["Add 2 Books"].tap()
         app.sheets["Add 2 Books"].buttons["Add All"].tap()
-        sleep(3)
+        sleep(1)
         XCTAssertEqual(app.tables.cells.count, 2)
     }
 
@@ -58,5 +60,6 @@ class SearchOnlineTests: XCTestCase {
         let duplicateAlert = app.alerts.element(boundBy: 0)
         XCTAssertEqual("Book Already Added", duplicateAlert.label)
         app.alerts["Book Already Added"].buttons["Go To Existing Book"].tap()
+        sleep(1)
     }
 }

@@ -9,7 +9,7 @@ public protocol CSVParserDelegate: class {
     func completion()
 }
 
-public enum CSVImportError {
+public enum CSVImportError: Error {
     case invalidCsv
     case missingHeaders
 }
@@ -23,14 +23,14 @@ public class CSVParser: NSObject, CHCSVParserDelegate {
     public init(csvFileUrl: URL) {
         parser = CHCSVParser(contentsOfCSVURL: csvFileUrl)
         parser.sanitizesFields = true
-        parser.recognizesBackslashesAsEscapes = true
         parser.trimsWhitespace = true
         parser.recognizesComments = true
         super.init()
         parser.delegate = self
     }
 
-    public var delegate: CSVParserDelegate? //swiftlint:disable:this weak_delegate (weakness not required in pratice)
+    public var delegate: CSVParserDelegate? //swiftlint:disable:this weak_delegate
+                                            // (weakness not required in pratice)
 
     public func begin() { parser.parse() }
     public func stop() { parser.cancelParsing() }

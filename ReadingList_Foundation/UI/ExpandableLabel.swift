@@ -19,6 +19,17 @@ public class ExpandableLabel: UIView {
         self.setup()
     }
 
+    override public func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        if #available(iOS 13.0, *) {
+            if let previousTraitCollection = previousTraitCollection,
+                previousTraitCollection.hasDifferentColorAppearance(comparedTo: traitCollection) {
+                setupGradient()
+            }
+        } else {
+            // Fallback on earlier versions
+        }
+    }
+
     @IBInspectable public var text: String? {
         didSet {
             label.text = text
@@ -27,11 +38,23 @@ public class ExpandableLabel: UIView {
         }
     }
 
-    @IBInspectable public var color: UIColor = .black {
+    @IBInspectable public var color: UIColor = {
+        if #available(iOS 13.0, *) {
+            return .label
+        } else {
+            return .black
+        }
+    }() {
         didSet { label.textColor = color }
     }
 
-    public var gradientColor: UIColor = .white {
+    @IBInspectable public var gradientColor: UIColor = {
+        if #available(iOS 13.0, *) {
+            return .systemBackground
+        } else {
+            return .white
+        }
+    }() {
         didSet {
             if seeMore.backgroundColor != gradientColor {
                 seeMore.backgroundColor = gradientColor
@@ -40,7 +63,7 @@ public class ExpandableLabel: UIView {
         }
     }
 
-    public var buttonColor: UIColor = .buttonBlue {
+    public var buttonColor: UIColor = .systemBlue {
         didSet { seeMore.textColor = buttonColor }
     }
 

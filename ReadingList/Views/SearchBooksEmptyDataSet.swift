@@ -15,10 +15,11 @@ class SearchBooksEmptyDataset: UIView {
     }
 
     func initialise(fromTheme theme: Theme) {
+        if #available(iOS 13.0, *) { return }
         backgroundColor = theme.tableBackgroundColor
         titleLabel.textColor = theme.titleTextColor
         descriptionLabel.textColor = theme.subtitleTextColor
-        poweredByGoogle.image = theme == .normal ? #imageLiteral(resourceName: "PoweredByGoogle_White") : #imageLiteral(resourceName: "PoweredByGoogle_Black")
+        poweredByGoogle.image = theme == .normal ? #imageLiteral(resourceName: "PoweredByGoogle_Light") : #imageLiteral(resourceName: "PoweredByGoogle_Dark")
     }
 
     func setEmptyDatasetReason(_ reason: EmptySetReason) {

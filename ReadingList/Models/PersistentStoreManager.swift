@@ -18,6 +18,9 @@ class PersistentStoreManager {
             os_log("Reinitialising persistent container")
         }
 
+        // Register our custom transformer for Author tranformable attributes
+        AuthorTransformer.register()
+
         // Migrate the store to the latest version if necessary and then initialise
         container = NSPersistentContainer(name: storeName, manuallyMigratedStoreAt: storeLocation)
         try container.migrateAndLoad(BooksModelVersion.self) {
@@ -54,7 +57,14 @@ class PersistentStoreManager {
     static func delete<T>(type: T.Type) where T: NSManagedObject {
         os_log("Deleting all %{public}s objects", String(describing: type))
         let batchDelete = NSBatchDeleteRequest(fetchRequest: type.fetchRequest())
-        try! PersistentStoreManager.container.persistentStoreCoordinator.execute(batchDelete, with: container.viewContext)
+        batchDelete.resultType = .resultTypeObjectIDs
+        let result = try! PersistentStoreManager.container.persistentStoreCoordinator.execute(batchDelete, with: container.viewContext)
+        guard let deletedObjectIds = (result as? NSBatchDeleteResult)?.result as? [NSManagedObjectID] else {
+            preconditionFailure("Unexpected batch delete result format: \(result)")
+        }
+        if deletedObjectIds.isEmpty { return }
+        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSDeletedObjectsKey: deletedObjectIds],
+                                            into: [PersistentStoreManager.container.viewContext])
     }
 
     /**
@@ -64,10 +74,5 @@ class PersistentStoreManager {
         delete(type: List.self)
         delete(type: Subject.self)
         delete(type: Book.self)
-        NotificationCenter.default.post(name: Notification.Name.PersistentStoreBatchOperationOccurred, object: nil)
     }
-}
-
-extension Notification.Name {
-    static let PersistentStoreBatchOperationOccurred = Notification.Name("persistent-store-batch-delete-occurred")
 }

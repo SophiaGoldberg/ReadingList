@@ -14,10 +14,12 @@ class ModelTests: XCTestCase {
     }
 
     func testBookSort() {
-        let maxSort = Book.maxSort(fromContext: testContainer.viewContext) ?? -1
+        let originalToReadMaxSort = Book.maxSort(with: .toRead, from: testContainer.viewContext) ?? -1
+        let originalToReadMinSort = Book.minSort(with: .toRead, from: testContainer.viewContext) ?? 0
+        let originalReadingMaxSort = Book.maxSort(with: .reading, from: testContainer.viewContext) ?? -1
 
         // Ensure settings are default
-        UserDefaults.standard[.addBooksToTopOfCustom] = false
+        GeneralSettings.addBooksToTopOfCustom = false
 
         func createBook(_ readState: BookReadState, _ title: String) -> Book {
             let book = Book(context: testContainer.viewContext)
@@ -30,59 +32,48 @@ class ModelTests: XCTestCase {
             book.title = title
             book.manualBookId = UUID().uuidString
             book.authors = [Author(lastName: "Lastname", firstNames: "Firstname")]
+            book.updateSortIndex()
             return book
         }
 
         // Add two books and check sort increments for both
         let book = createBook(.toRead, "title1")
+        XCTAssertEqual(originalToReadMaxSort + 1, book.sort)
+        XCTAssertEqual(Book.maxSort(with: .toRead, from: testContainer.viewContext), book.sort)
         try! testContainer.viewContext.save()
-        XCTAssertEqual(maxSort + 1, book.sort)
-        XCTAssertEqual(Book.maxSort(fromContext: testContainer.viewContext)!, book.sort)
 
         let book2 = createBook(.toRead, "title2")
+        XCTAssertEqual(originalToReadMaxSort + 2, book2.sort)
+        XCTAssertEqual(Book.maxSort(with: .toRead, from: testContainer.viewContext), book2.sort)
         try! testContainer.viewContext.save()
-        XCTAssertEqual(maxSort + 2, book2.sort)
-        XCTAssertEqual(Book.maxSort(fromContext: testContainer.viewContext)!, book2.sort)
 
-        // Start reading book2; check it has no sort and the maxSort goes down
+        // Start reading book2; check its sort is reset, and the maxSort of toRead goes down
         book2.setReading(started: Date())
+        book2.updateSortIndex()
+        XCTAssertEqual(originalReadingMaxSort + 1, book2.sort)
+        XCTAssertEqual(Book.maxSort(with: .toRead, from: testContainer.viewContext), originalToReadMaxSort + 1)
         try! testContainer.viewContext.save()
-        XCTAssertEqual(nil, book2.sort)
-        XCTAssertEqual(Book.maxSort(fromContext: testContainer.viewContext)!, maxSort + 1)
 
-        // Add book to .reading and check sort remains nil
+        // Add book to .reading and check sort increments, but toRead sort unchanged
         let book3 = createBook(.reading, "title3")
+        XCTAssertEqual(originalReadingMaxSort + 2, book3.sort)
+        XCTAssertEqual(Book.maxSort(with: .toRead, from: testContainer.viewContext), originalToReadMaxSort + 1)
         try! testContainer.viewContext.save()
-        XCTAssertEqual(nil, book3.sort)
-        XCTAssertEqual(Book.maxSort(fromContext: testContainer.viewContext)!, maxSort + 1)
-
-        // Add book with prepopulated sort, check it is not changed
-        let book4 = createBook(.toRead, "title4")
-        book4.sort = 12
-        try! testContainer.viewContext.save()
-        XCTAssertEqual(12, book4.sort)
-        XCTAssertEqual(Book.maxSort(fromContext: testContainer.viewContext)!, book4.sort)
 
         // Update the setting
-        UserDefaults.standard[.addBooksToTopOfCustom] = true
+        GeneralSettings.addBooksToTopOfCustom = true
 
         // Add a book and check the sort is below other books
-        let book5 = createBook(.toRead, "title5")
+        let book4 = createBook(.toRead, "title4")
+        XCTAssertEqual(originalToReadMinSort - 1, book4.sort)
+        XCTAssertEqual(Book.minSort(with: .toRead, from: testContainer.viewContext)!, book4.sort)
         try! testContainer.viewContext.save()
-        XCTAssertEqual(-1, book5.sort)
-        XCTAssertEqual(Book.minSort(fromContext: testContainer.viewContext)!, book5.sort)
 
         // Add another - check that the sort goes down
-        let book6 = createBook(.toRead, "title6")
+        let book5 = createBook(.toRead, "title5")
         try! testContainer.viewContext.save()
-        XCTAssertEqual(-2, book6.sort)
-        XCTAssertEqual(Book.minSort(fromContext: testContainer.viewContext)!, book6.sort)
-
-        // And again, in different state, check sort is nil
-        let book7 = createBook(.reading, "title7")
-        book7.setReading(started: Date())
-        try! testContainer.viewContext.save()
-        XCTAssertNil(book7.sort)
+        XCTAssertEqual(originalToReadMinSort - 2, book5.sort)
+        XCTAssertEqual(Book.minSort(with: .toRead, from: testContainer.viewContext)!, book5.sort)
     }
 
     func testAuthorCalculatedProperties() {
@@ -95,19 +86,6 @@ class ModelTests: XCTestCase {
 
         XCTAssertEqual("birkhauser.wahloo..sjowall.maj", book.authorSort)
         XCTAssertEqual("Wahlöö Birkhäuser, Maj Sjöwall", book.authors.fullNames)
-    }
-
-    func testLanguageValidation() {
-        let book = Book(context: testContainer.viewContext)
-        book.title = "Test"
-        book.authors = [Author(lastName: "Test", firstNames: "Author")]
-        book.manualBookId = UUID().uuidString
-
-        book.languageCode = "zz"
-        XCTAssertThrowsError(try book.validateForUpdate(), "Valid language code")
-
-        book.languageCode = "en"
-        XCTAssertNoThrow(try book.validateForUpdate(), "Invalid language code")
     }
 
     func testIsbnValidation() {

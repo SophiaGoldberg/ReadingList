@@ -7,5 +7,12 @@ public class NoCancelButtonSearchController: UISearchController {
 }
 
 class NoCancelButtonSearchBar: UISearchBar {
-    override func setShowsCancelButton(_ showsCancelButton: Bool, animated: Bool) { /* void */ }
+    override func setShowsCancelButton(_ showsCancelButton: Bool, animated: Bool) {
+        // do nothing
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        super.setShowsCancelButton(false, animated: false)
+    }
 }

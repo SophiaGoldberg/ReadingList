@@ -19,6 +19,8 @@ extension UITableView: NSFetchedResultsControllerDelegate {
             insertRows(at: [newIndexPath!], with: .automatic)
         case .delete:
             deleteRows(at: [indexPath!], with: .automatic)
+        @unknown default:
+            assertionFailure("Unknown change type \(type)")
         }
     }
 

@@ -10,8 +10,8 @@ extension UIStoryboard {
          return UIStoryboard(name: "ScanBarcode", bundle: Bundle.main)
     }
 
-    static var AddToList: UIStoryboard {
-         return UIStoryboard(name: "AddToList", bundle: Bundle.main)
+    static var ManageLists: UIStoryboard {
+         return UIStoryboard(name: "ManageLists", bundle: Bundle.main)
     }
 
     static var BookTable: UIStoryboard {
@@ -22,11 +22,15 @@ extension UIStoryboard {
          return UIStoryboard(name: "BookDetails", bundle: Bundle.main)
     }
 
-    static var Organise: UIStoryboard {
-         return UIStoryboard(name: "Organise", bundle: Bundle.main)
+    static var Organize: UIStoryboard {
+         return UIStoryboard(name: "Organize", bundle: Bundle.main)
     }
 
     static var Settings: UIStoryboard {
          return UIStoryboard(name: "Settings", bundle: Bundle.main)
+    }
+
+    static var ImportExport: UIStoryboard {
+         return UIStoryboard(name: "ImportExport", bundle: Bundle.main)
     }
 }

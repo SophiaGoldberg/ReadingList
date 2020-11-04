@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
-    <device id="retina4_7" orientation="portrait">
-        <adaptation id="fullscreen"/>
-    </device>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14865.1" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14460.20"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14819.2"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -15,21 +13,20 @@
             <rect key="frame" x="0.0" y="0.0" width="375" height="92"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
             <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="fMv-ey-DGf" id="K3N-Ot-mPL">
-                <rect key="frame" x="0.0" y="0.0" width="375" height="91.5"/>
+                <rect key="frame" x="0.0" y="0.0" width="375" height="92"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Title" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5oX-n2-F6T">
-                        <rect key="frame" x="67" y="11" width="220" height="20"/>
+                        <rect key="frame" x="67.5" y="11" width="219.5" height="20"/>
                         <accessibility key="accessibilityConfiguration" identifier="title"/>
                         <fontDescription key="fontDescription" name="GillSans" family="Gill Sans" pointSize="17"/>
-                        <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
                         <nil key="highlightedColor"/>
                         <userDefinedRuntimeAttributes>
                             <userDefinedRuntimeAttribute type="string" keyPath="dynamicFontSize" value="Headline"/>
                         </userDefinedRuntimeAttributes>
                     </label>
                     <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="CoverPlaceholder" translatesAutoresizingMaskIntoConstraints="NO" id="PWo-fS-Oux">
-                        <rect key="frame" x="6" y="6" width="53" height="79.5"/>
+                        <rect key="frame" x="6" y="6" width="53.5" height="80"/>
                         <constraints>
                             <constraint firstAttribute="width" secondItem="PWo-fS-Oux" secondAttribute="height" multiplier="1:1.5" id="d5z-HM-Hv6"/>
                         </constraints>
@@ -43,9 +40,9 @@
                         </userDefinedRuntimeAttributes>
                     </imageView>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Authors" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1OS-m5-Lp3">
-                        <rect key="frame" x="67" y="31" width="300" height="17.5"/>
+                        <rect key="frame" x="67.5" y="31" width="299.5" height="17.5"/>
                         <fontDescription key="fontDescription" name="GillSans" family="Gill Sans" pointSize="15"/>
-                        <color key="textColor" white="0.33333333329999998" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="textColor" systemColor="secondaryLabelColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
                         <nil key="highlightedColor"/>
                         <userDefinedRuntimeAttributes>
                             <userDefinedRuntimeAttribute type="string" keyPath="dynamicFontSize" value="Subhead"/>
@@ -57,22 +54,23 @@
                             <constraint firstAttribute="width" relation="lessThanOrEqual" constant="80" id="zar-wl-0vF"/>
                         </constraints>
                         <fontDescription key="fontDescription" name="GillSans" family="Gill Sans" pointSize="15"/>
-                        <color key="textColor" white="0.33333333329999998" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="textColor" systemColor="secondaryLabelColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
                         <nil key="highlightedColor"/>
                         <userDefinedRuntimeAttributes>
                             <userDefinedRuntimeAttribute type="string" keyPath="dynamicFontSize" value="Footnote"/>
                         </userDefinedRuntimeAttributes>
                     </label>
                     <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progress="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="wt1-NF-e6J" userLabel="Reading Progress">
-                        <rect key="frame" x="67" y="79" width="300" height="2"/>
+                        <rect key="frame" x="67.5" y="79" width="299.5" height="2"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="2" id="e9T-QP-wi9"/>
                         </constraints>
+                        <color key="trackTintColor" systemColor="tertiarySystemFillColor" red="0.46274509800000002" green="0.46274509800000002" blue="0.50196078430000002" alpha="0.12" colorSpace="custom" customColorSpace="sRGB"/>
                     </progressView>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="50%" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="0DL-Pw-yOn" userLabel="Reading Progress Label">
                         <rect key="frame" x="341" y="59" width="26" height="18"/>
                         <fontDescription key="fontDescription" name="GillSans" family="Gill Sans" pointSize="15"/>
-                        <color key="textColor" white="0.33333333329999998" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <color key="textColor" systemColor="secondaryLabelColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
                         <nil key="highlightedColor"/>
                         <userDefinedRuntimeAttributes>
                             <userDefinedRuntimeAttribute type="string" keyPath="dynamicFontSize" value="Footnote"/>
@@ -106,6 +104,7 @@
                 <outlet property="readingProgressLabel" destination="0DL-Pw-yOn" id="4bE-fH-M5m"/>
                 <outlet property="titleLabel" destination="5oX-n2-F6T" id="Etj-ZU-2XF"/>
             </connections>
+            <point key="canvasLocation" x="140" y="131"/>
         </tableViewCell>
     </objects>
     <resources>

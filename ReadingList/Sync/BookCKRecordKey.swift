@@ -58,9 +58,9 @@ extension Book {
             case #keyPath(Book.bookDescription): return .bookDescription
             case #keyPath(Book.notes): return .notes
             case Book.Key.currentPage.rawValue: return .currentPage
-            case #keyPath(Book.languageCode): return .languageCode
+            case Book.Key.languageCode.rawValue: return .languageCode
             case Book.Key.rating.rawValue: return .rating
-            case Book.Key.sort.rawValue: return .sort
+            case #keyPath(Book.sort): return .sort
             case #keyPath(Book.startedReading): return .readDates
             case #keyPath(Book.finishedReading): return .readDates
             default: return nil

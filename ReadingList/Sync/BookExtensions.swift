@@ -1,5 +1,6 @@
 import CloudKit
 import os.log
+import ReadingList_Foundation
 
 extension Book {
     func newRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID {
@@ -28,7 +29,7 @@ extension Book {
         case .bookDescription: return bookDescription as NSString?
         case .notes: return notes as NSString?
         case .currentPage: return currentPage as NSNumber?
-        case .languageCode: return languageCode as NSString?
+        case .languageCode: return language?.rawValue as NSString?
         case .rating: return rating as NSNumber?
         case .sort: return sort as NSNumber?
         case .readDates:
@@ -55,10 +56,13 @@ extension Book {
         case .publicationDate: publicationDate = value as? Date
         case .bookDescription: bookDescription = value as? String
         case .notes: notes = value as? String
-        case .currentPage: currentPage = value as? Int32
-        case .languageCode: languageCode = value as? String
+        case .currentPage: setProgress(.page(value as? Int32))
+        case .languageCode:
+            if let languageString = value as? String {
+                language = LanguageIso639_1(rawValue: languageString)
+            }
         case .rating: rating = value as? Int16
-        case .sort: sort = value as? Int32
+        case .sort: sort = value as! Int32
         case .readDates:
             if let datesArray = value as? [Date] {
                 if datesArray.count == 1 {
@@ -72,11 +76,13 @@ extension Book {
         case .authors:
             authors = NSKeyedUnarchiver.unarchiveObject(with: value as! Data) as! [Author]
         case .coverImage:
-            guard let imageAsset = value as? CKAsset, FileManager.default.fileExists(atPath: imageAsset.fileURL.path) else {
+            guard let imageAsset = value as? CKAsset,
+                  let assetUrl = imageAsset.fileURL,
+                  FileManager.default.fileExists(atPath: assetUrl.path) else {
                 coverImage = nil
                 return
             }
-            coverImage = FileManager.default.contents(atPath: imageAsset.fileURL.path)
+            coverImage = FileManager.default.contents(atPath: assetUrl.path)
         }
     }
 

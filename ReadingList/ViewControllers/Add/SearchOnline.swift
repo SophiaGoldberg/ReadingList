@@ -5,17 +5,18 @@ import CoreData
 import Promises
 import ReadingList_Foundation
 
-class SearchOnline: UITableViewController {
+final class SearchOnline: UITableViewController {
 
     var initialSearchString: String?
-    var tableItems = [SearchResult]()
+    var tableItems = [GoogleBooksApi.SearchResult]()
 
     @IBOutlet private weak var addAllButton: UIBarButtonItem!
-    @IBOutlet private weak var selectModeButton: UIBarButtonItem!
+    @IBOutlet private weak var selectModeButton: TogglableUIBarButtonItem!
 
     var searchController: UISearchController!
     private let feedbackGenerator = UINotificationFeedbackGenerator()
     private let emptyDatasetView = UINib.instantiate(SearchBooksEmptyDataset.self)
+    private let googleBooksApi = GoogleBooksApi()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,22 +40,16 @@ class SearchOnline: UITableViewController {
             performSearch(searchText: initialSearchString)
         }
 
+        selectModeButton.onToggle = { _ in
+            self.changeSelectMode()
+        }
+
         monitorThemeSetting()
     }
 
     override func initialise(withTheme theme: Theme) {
         super.initialise(withTheme: theme)
         emptyDatasetView.initialise(fromTheme: theme)
-
-        // Navigation controller should not be nil, but - according to very rare crash reports - it sometimes is.
-        // This may be due to some as-yet unexplained memory leak of the SearchOnline view controller.
-        // We want to find these cases, so trigger a crash in DEBUG build.
-        if let navigationController = navigationController {
-            navigationController.toolbar.barStyle = theme.barStyle
-        } else {
-            UserEngagement.logError(NSError(code: ReadingListError.Code.missingNavigationController, userInfo: nil))
-            assertionFailure("NavigationController was unexpectedly nil")
-        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -89,9 +84,30 @@ class SearchOnline: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: String(describing: BookTableViewCell.self), for: indexPath) as! BookTableViewCell
+        let cell = tableView.dequeue(BookTableViewCell.self, for: indexPath)
         cell.configureFrom(tableItems[indexPath.row])
+        cell.accessoryType = .detailButton
         return cell
+    }
+
+    override func tableView(_ tableView: UITableView, accessoryButtonTappedForRowWith indexPath: IndexPath) {
+        let searchResult = tableItems[indexPath.row]
+        if alertIfDuplicate(searchResult, indexPath: indexPath) { return }
+        fetch(searchResult: tableItems[indexPath.row]) { book, context in
+            EditBookMetadata(bookToCreate: book, scratchpadContext: context)
+        }
+    }
+
+    /**
+     Checks whether the specified result already exists as a book, returning true if it does.
+     If it does exist, a duplicate book alert is presented from the provided index path.
+    */
+    private func alertIfDuplicate(_ searchResult: GoogleBooksApi.SearchResult, indexPath: IndexPath) -> Bool {
+        if let existingBook = Book.get(fromContext: PersistentStoreManager.container.viewContext, googleBooksId: searchResult.id, isbn: searchResult.isbn13?.string) {
+            presentDuplicateBookAlert(book: existingBook, fromSelectedIndex: indexPath)
+            return true
+        }
+        return false
     }
 
     override func viewDidLayoutSubviews() {
@@ -120,11 +136,7 @@ class SearchOnline: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let searchResult = tableItems[indexPath.row]
-
-        // Duplicate check
-        if let existingBook = Book.get(fromContext: PersistentStoreManager.container.viewContext, googleBooksId: searchResult.id, isbn: searchResult.isbn13) {
-            presentDuplicateBookAlert(book: existingBook, fromSelectedIndex: indexPath); return
-        }
+        if alertIfDuplicate(searchResult, indexPath: indexPath) { return }
 
         // If we are in multiple selection mode (i.e. Edit mode), switch the Add All button on; otherwise, fetch and segue
         if tableView.isEditing {
@@ -132,7 +144,9 @@ class SearchOnline: UITableViewController {
             addAllButton.title = "Add \(count) Book\(count == 1 ? "" : "s")"
             addAllButton.isEnabled = true
         } else {
-            fetchAndSegue(searchResult: searchResult)
+            fetch(searchResult: searchResult) { book, context in
+                EditBookReadState(newUnsavedBook: book, scratchpadContext: context)
+            }
         }
     }
 
@@ -145,7 +159,7 @@ class SearchOnline: UITableViewController {
 
         SVProgressHUD.show(withStatus: "Searching...")
         feedbackGenerator.prepare()
-        GoogleBooks.search(searchText)
+        googleBooksApi.search(searchText)
             .always(on: .main, SVProgressHUD.dismiss)
             .catch(on: .main) { _ in
                 self.feedbackGenerator.notificationOccurred(.error)
@@ -155,7 +169,7 @@ class SearchOnline: UITableViewController {
     }
 
     /// - Parameter results: Provide nil to indicate that a search was not performed
-    func displaySearchResults(_ results: [SearchResult]?) {
+    func displaySearchResults(_ results: [GoogleBooksApi.SearchResult]?) {
         if let results = results {
             if results.isEmpty {
                 feedbackGenerator.notificationOccurred(.warning)
@@ -182,7 +196,7 @@ class SearchOnline: UITableViewController {
     }
 
     func presentDuplicateBookAlert(book: Book, fromSelectedIndex indexPath: IndexPath) {
-        let alert = duplicateBookAlertController(goToExistingBook: {
+        let alert = UIAlertController.duplicateBook(goToExistingBook: {
             self.presentingViewController?.dismiss(animated: true) {
                 guard let tabBarController = AppDelegate.shared.tabBarController else {
                     assertionFailure()
@@ -196,14 +210,8 @@ class SearchOnline: UITableViewController {
         searchController.present(alert, animated: true)
     }
 
-    func createBook(inContext context: NSManagedObjectContext, from searchResult: SearchResult) -> Promise<Book> {
-        return GoogleBooks.fetch(searchResult: searchResult)
-            .recover { error -> FetchResult in
-                switch error {
-                case GoogleError.noResult: return FetchResult(fromSearchResult: searchResult)
-                default: throw error
-                }
-            }
+    func createBook(inContext context: NSManagedObjectContext, from searchResult: GoogleBooksApi.SearchResult) -> Promise<Book> {
+        return googleBooksApi.fetch(searchResult: searchResult)
             .then(on: .main) { fetchResult -> Book in
                 let book = Book(context: context)
                 book.populate(fromFetchResult: fetchResult)
@@ -211,7 +219,7 @@ class SearchOnline: UITableViewController {
             }
     }
 
-    func fetchAndSegue(searchResult: SearchResult) {
+    func fetch(searchResult: GoogleBooksApi.SearchResult, segueTo nextVc: @escaping (Book, NSManagedObjectContext) -> UIViewController) {
         UserEngagement.logEvent(.searchOnline)
         SVProgressHUD.show(withStatus: "Loading...")
         let editContext = PersistentStoreManager.container.viewContext.childContext()
@@ -223,8 +231,7 @@ class SearchOnline: UITableViewController {
             }
             .then(on: .main) { book in
                 guard let navigationController = self.navigationController else { return }
-                let editPage = EditBookReadState(newUnsavedBook: book, scratchpadContext: editContext)
-                navigationController.pushViewController(editPage, animated: true)
+                navigationController.pushViewController(nextVc(book, editContext), animated: true)
             }
     }
 
@@ -233,9 +240,9 @@ class SearchOnline: UITableViewController {
         navigationController?.setToolbarHidden(true, animated: true)
     }
 
-    @IBAction private func changeSelectMode(_ sender: UIBarButtonItem) {
+    private func changeSelectMode() {
         tableView.setEditing(!tableView.isEditing, animated: true)
-        selectModeButton.title = tableView.isEditing ? "Select Single" : "Select Many"
+        selectModeButton.isToggled.toggle()
         if !tableView.isEditing {
             addAllButton.title = "Add Books"
             addAllButton.isEnabled = false
@@ -246,13 +253,19 @@ class SearchOnline: UITableViewController {
         guard tableView.isEditing, let selectedRows = tableView.indexPathsForSelectedRows, !selectedRows.isEmpty else { return }
 
         // If there is only 1 cell selected, we might as well proceed as we would in single selection mode
-        guard selectedRows.count > 1 else { fetchAndSegue(searchResult: tableItems[selectedRows.first!.row]); return }
+        guard selectedRows.count > 1 else {
+            fetch(searchResult: tableItems[selectedRows.first!.row]) { book, context in
+                EditBookReadState(newUnsavedBook: book, scratchpadContext: context)
+            }
+            return
+        }
 
         let alert = UIAlertController(title: "Add \(selectedRows.count) Books", message: "Are you sure you want to add all \(selectedRows.count) selected books? They will be added to the 'To Read' section.", preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Add All", style: .default) { _ in
             self.addMultiple(selectedRows: selectedRows)
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        alert.popoverPresentationController?.barButtonItem = sender
         present(alert, animated: true, completion: nil)
     }
 
@@ -276,14 +289,9 @@ class SearchOnline: UITableViewController {
                 let newBookCount = newBooks.count
 
                 // Apply sorting
-                var maximalSort = Book.maximalSort(getMaximum: !UserDefaults.standard[.addBooksToTopOfCustom], fromContext: editContext) ?? 0
+                let bookSortManager = BookSortIndexManager(context: PersistentStoreManager.container.viewContext, readState: .toRead)
                 for book in newBooks {
-                    if UserDefaults.standard[.addBooksToTopOfCustom] {
-                        maximalSort -= 1
-                    } else {
-                        maximalSort += 1
-                    }
-                    book.sort = maximalSort
+                    book.sort = bookSortManager.getAndIncrementSort()
                 }
 
                 editContext.saveAndLogIfErrored()

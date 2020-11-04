@@ -35,11 +35,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             self.window!.rootViewController = rootViewController
 
             self.launchManager.handleLaunchOptions(options, tabBarController: rootViewController)
-            self.launchManager.postPersistentStoreLoadInitialise()
+            self.launchManager.initialiseAfterPersistentStoreLoad()
 
             // Initialise the Sync Coordinator which will maintain iCloud synchronisation
             self.syncCoordinator = SyncCoordinator(container: PersistentStoreManager.container)
-            if UserDefaults.standard[.iCloudSyncEnabled] {
+            if GeneralSettings.iCloudSyncEnabled {
                 self.syncCoordinator!.start()
             }
         }
@@ -58,7 +58,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        guard url.isFileURL && url.pathExtension == "csv" else { return false }
         return launchManager.handleOpenUrl(url)
     }
 
@@ -72,7 +71,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        if UserDefaults.standard[.iCloudSyncEnabled], let syncCoordinator = syncCoordinator, syncCoordinator.remote.isInitialised {
+        if GeneralSettings.iCloudSyncEnabled, let syncCoordinator = syncCoordinator, syncCoordinator.remote.isInitialised {
             syncCoordinator.remoteNotificationReceived(applicationCallback: completionHandler)
         }
     }

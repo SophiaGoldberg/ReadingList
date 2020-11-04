@@ -1,0 +1,27 @@
+
+/* Class = "UIBarButtonItem"; title = " "; ObjectID = "5kO-5j-wCF"; */
+"5kO-5j-wCF.title" = " ";
+
+/* Class = "UIBarButtonItem"; title = "Edit"; ObjectID = "I9i-oN-tUG"; */
+"I9i-oN-tUG.title" = "Edit";
+
+/* Class = "UIBarButtonItem"; title = "Sort"; ObjectID = "KbO-oT-Xon"; */
+"KbO-oT-Xon.title" = "Sort";
+
+/* Class = "UILabel"; text = "My Wish List"; ObjectID = "RhS-Gr-Fnz"; */
+"RhS-Gr-Fnz.text" = "My Wish List";
+
+/* Class = "UINavigationItem"; title = "Organize"; ObjectID = "U1p-Q1-su7"; */
+"U1p-Q1-su7.title" = "Organise";
+
+/* Class = "UITableViewController"; title = "My List"; ObjectID = "ggN-hf-l8Q"; */
+"ggN-hf-l8Q.title" = "My List";
+
+/* Class = "UINavigationItem"; title = "List Title"; ObjectID = "jSI-Qd-fr4"; */
+"jSI-Qd-fr4.title" = "List Title";
+
+/* Class = "UILabel"; text = "12 books"; ObjectID = "kCO-LL-KNN"; */
+"kCO-LL-KNN.text" = "12 books";
+
+/* Class = "UITabBarItem"; title = "Organize"; ObjectID = "ofv-YQ-PuH"; */
+"ofv-YQ-PuH.title" = "Organise";

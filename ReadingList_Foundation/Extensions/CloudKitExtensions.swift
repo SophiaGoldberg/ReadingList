@@ -43,9 +43,10 @@ public extension CKRecord {
         }
         if let leftAsset = left as? CKAsset {
             guard let rightAsset = right as? CKAsset else { return false }
-            guard FileManager.default.fileExists(atPath: leftAsset.fileURL.path)
-                && FileManager.default.fileExists(atPath: rightAsset.fileURL.path) else { return false }
-            return FileManager.default.contentsEqual(atPath: leftAsset.fileURL.path, andPath: rightAsset.fileURL.path)
+            guard let leftAssetUrl = leftAsset.fileURL, let rightAssetUrl = rightAsset.fileURL else { return false }
+            guard FileManager.default.fileExists(atPath: leftAssetUrl.path)
+                && FileManager.default.fileExists(atPath: rightAssetUrl.path) else { return false }
+            return FileManager.default.contentsEqual(atPath: leftAssetUrl.path, andPath: rightAssetUrl.path)
         }
 
         fatalError("Unexpected data type in CKRecordValue comparison.")

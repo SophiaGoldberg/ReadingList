@@ -2,7 +2,7 @@ import UIKit
 import CoreSpotlight
 import Eureka
 
-class TabBarController: UITabBarController {
+final class TabBarController: UITabBarController {
 
     convenience init() {
         self.init(nibName: nil, bundle: nil)
@@ -34,7 +34,7 @@ class TabBarController: UITabBarController {
         let finished = UIStoryboard.BookTable.instantiateRoot() as! UISplitViewController
         (finished.masterNavigationRoot as! BookTable).readStates = [.finished]
 
-        viewControllers = [toRead, finished, UIStoryboard.Organise.instantiateRoot(), UIStoryboard.Settings.instantiateRoot()]
+        viewControllers = [toRead, finished, UIStoryboard.Organize.instantiateRoot(), UIStoryboard.Settings.instantiateRoot()]
 
         // Tabs 3 and 4 are already configured by the Organise and Settings storyboards
         tabBar.items![0].configure(tag: TabOption.toRead.rawValue, title: "To Read", image: #imageLiteral(resourceName: "courses"), selectedImage: #imageLiteral(resourceName: "courses-filled"))
@@ -58,7 +58,19 @@ class TabBarController: UITabBarController {
 
     func simulateBookSelection(_ book: Book, allowTableObscuring: Bool) {
         selectedTab = book.readState == .finished ? .finished : .toRead
-        selectedBookTable!.simulateBookSelection(book.objectID, allowTableObscuring: allowTableObscuring)
+        // Crashes observed on iOS 13: simulateBookSelection crashed as implicitly unwrapped optionals were nil,
+        // which could only be the case if viewDidLoad had not been called. Check whether the view is loaded, and
+        // if not, schedule the work on the main thread, so that the view can be loaded first. Check again that
+        // the view is loaded, to be safe.
+        if selectedBookTable?.viewIfLoaded == nil {
+            DispatchQueue.main.async { [unowned self] in
+                if self.selectedBookTable?.viewIfLoaded != nil {
+                    self.selectedBookTable!.simulateBookSelection(book.objectID, allowTableObscuring: allowTableObscuring)
+                }
+            }
+        } else {
+            selectedBookTable!.simulateBookSelection(book.objectID, allowTableObscuring: allowTableObscuring)
+        }
     }
 
     override func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
