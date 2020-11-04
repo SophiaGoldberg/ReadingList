@@ -38,7 +38,13 @@ extension Book {
             case .reading: return [startedReading! as NSDate] as NSArray
             case .finished: return [startedReading! as NSDate, finishedReading! as NSDate] as NSArray
             }
-        case .authors: return NSKeyedArchiver.archivedData(withRootObject: authors) as NSData
+        case .authors:
+            do {
+                return try NSKeyedArchiver.archivedData(withRootObject: authors, requiringSecureCoding: true) as NSData
+            } catch {
+                os_log(.error, "Error decoding author data")
+                return nil
+            }
         case .coverImage:
             guard let coverImage = coverImage else { return nil }
             let imageFilePath = URL.temporary()
@@ -74,7 +80,12 @@ extension Book {
                 setToRead()
             }
         case .authors:
-            authors = NSKeyedUnarchiver.unarchiveObject(with: value as! Data) as! [Author]
+            do {
+                authors = try NSKeyedUnarchiver.unarchivedObject(ofClasses: [Author.self, NSArray.self], from: value as! Data) as! [Author]
+            } catch {
+                os_log(.error, "Error decoding author data")
+                authors = []
+            }
         case .coverImage:
             guard let imageAsset = value as? CKAsset,
                   let assetUrl = imageAsset.fileURL,

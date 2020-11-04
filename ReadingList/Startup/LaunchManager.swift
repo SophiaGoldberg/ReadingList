@@ -164,7 +164,7 @@ class LaunchManager {
         #endif
     }
 
-    public func initialiseAfterPersistentStoreLoad() {
+    func initialiseAfterPersistentStoreLoad() {
         #if DEBUG
         Debug.initialiseData()
         #endif

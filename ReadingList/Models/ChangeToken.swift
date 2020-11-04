@@ -9,8 +9,8 @@ public class ChangeToken: NSManagedObject {
     @NSManaged private var changeTokenData: Data
 
     var changeToken: CKServerChangeToken {
-        get { return NSKeyedUnarchiver.unarchiveObject(with: changeTokenData) as! CKServerChangeToken }
-        set { changeTokenData = NSKeyedArchiver.archivedData(withRootObject: newValue) }
+        get { return try! NSKeyedUnarchiver.unarchivedObject(ofClass: CKServerChangeToken.self, from: changeTokenData)! }
+        set { changeTokenData = try! NSKeyedArchiver.archivedData(withRootObject: newValue, requiringSecureCoding: true) }
     }
 
     convenience init(context: NSManagedObjectContext, zoneID: CKRecordZone.ID) {

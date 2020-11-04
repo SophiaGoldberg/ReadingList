@@ -80,13 +80,13 @@ class BookCloudKitRemote {
             os_log("Fetching record changes with change token", type: .info)
         }
 
-        let options = CKFetchRecordZoneChangesOperation.ZoneOptions()
+        let options = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
         if let changeToken = changeToken {
             options.previousServerChangeToken = changeToken
         }
 
         var hasChanges = false
-        let operation = CKFetchRecordZoneChangesOperation(recordZoneIDs: [bookZoneID], optionsByRecordZoneID: [bookZoneID: options])
+        let operation = CKFetchRecordZoneChangesOperation(recordZoneIDs: [bookZoneID], configurationsByRecordZoneID: [bookZoneID: options])
         operation.qualityOfService = .userInitiated
         operation.recordChangedBlock = { record in
             recordChange(record)

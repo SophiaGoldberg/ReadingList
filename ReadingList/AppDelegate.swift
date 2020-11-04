@@ -8,7 +8,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
     var launchManager = LaunchManager()
     let upgradeManager = UpgradeManager()
-    
+
     /// Will be nil until after the persistent store is initialised.
     var syncCoordinator: SyncCoordinator?
 

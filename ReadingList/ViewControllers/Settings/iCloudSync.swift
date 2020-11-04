@@ -13,7 +13,7 @@ class CloudSync: UITableViewController {
         super.viewDidLoad()
         monitorThemeSetting()
         enabledSwitch.isOn = GeneralSettings.iCloudSyncEnabled
-        if !GeneralSettings.iCloudSyncEnabled && AppDelegate.shared.syncCoordinator?.reachability.connection == .none {
+        if !GeneralSettings.iCloudSyncEnabled && AppDelegate.shared.syncCoordinator?.reachability.connection == .unavailable {
             enabledSwitch.isEnabled = false
         }
         NotificationCenter.default.addObserver(self, selector: #selector(networkConnectivityDidChange), name: .reachabilityChanged, object: nil)
@@ -21,7 +21,7 @@ class CloudSync: UITableViewController {
 
     @objc private func networkConnectivityDidChange() {
         guard !GeneralSettings.iCloudSyncEnabled else { return }
-        enabledSwitch.isEnabled = AppDelegate.shared.syncCoordinator?.reachability.connection != .none
+        enabledSwitch.isEnabled = AppDelegate.shared.syncCoordinator?.reachability.connection != .unavailable
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {

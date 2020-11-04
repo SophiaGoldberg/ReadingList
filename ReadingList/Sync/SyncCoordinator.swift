@@ -68,7 +68,7 @@ class SyncCoordinator {
     @objc func networkConnectivityDidChange() {
         let currentConnection = reachability.connection
         os_log("Network connectivity changed to %{public}s", type: .info, currentConnection.description)
-        if currentConnection == .none {
+        if currentConnection == .unavailable {
             stop()
         } else {
             start()

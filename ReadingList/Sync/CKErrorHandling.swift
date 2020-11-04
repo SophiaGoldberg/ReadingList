@@ -45,6 +45,8 @@ extension CKError {
         // Handle on case-by-case basis
         case .unknownItem, .serverRecordChanged:
             return .handleConcurrencyErrors
+        @unknown default:
+            return .retryLater
         }
     }
 }
@@ -90,6 +92,7 @@ extension CKError.Code {
         case .serverResponseLost: return "serverResponseLost"
         case .assetNotAvailable: return "assetNotAvailable"
         case .partialFailure: return "partialFailure"
+        @unknown default: return "unknown"
         }
     }
 }

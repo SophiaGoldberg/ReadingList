@@ -39,7 +39,7 @@ extension Book {
         }
 
         var bitmask: Bitmask {
-            return Bitmask(rawValue: 1 << CKRecordKey.allCases.index(of: self)!)
+            return Bitmask(rawValue: 1 << CKRecordKey.allCases.firstIndex(of: self)!)
         }
 
         static func from(ckRecordKey key: String) -> CKRecordKey? {
