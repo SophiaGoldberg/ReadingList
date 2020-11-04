@@ -60,9 +60,6 @@ extension Book {
         if readState != .reading && (currentPage != nil || currentPercentage != nil) {
             throw BookValidationError.presentCurrentPage.NSError()
         }
-        if keysPendingRemoteUpdate != 0 && remoteIdentifier == nil {
-            throw BookValidationError.bitmaskPresentWithoutRemoteIdentifier.NSError()
-        }
     }
 }
 
@@ -74,7 +71,6 @@ enum BookValidationError: Int {
     case missingIdentifier = 5
     case noAuthors = 6
     case presentCurrentPage = 7
-    case bitmaskPresentWithoutRemoteIdentifier = 8
 }
 
 extension BookValidationError {
@@ -87,7 +83,6 @@ extension BookValidationError {
         case .missingIdentifier: return "GoogleBooksId and ManualBooksId cannot both be nil"
         case .noAuthors: return "Authors array must be non-empty"
         case .presentCurrentPage: return "CurrentPage must be nil when not Currently Reading"
-        case .bitmaskPresentWithoutRemoteIdentifier: return "Bitmask cannot be present without a remote identifier present"
         }
     }
 

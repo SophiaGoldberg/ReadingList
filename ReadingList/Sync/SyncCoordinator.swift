@@ -52,8 +52,10 @@ class SyncCoordinator {
         syncContext.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump // FUTURE: Add a custom merge policy?
 
         self.downstreamChangeProcessor = BookDownloader(syncContext, remote)
-        self.upstreamChangeProcessors = [BookUploader(syncContext, remote),
-                                         BookDeleter(syncContext, remote)]
+        self.upstreamChangeProcessors = [BookUploader(syncContext, remote)
+                                         // TODO: Restore book deleter
+                                         //,BookDeleter(syncContext, remote)
+        ]
     }
 
     func monitorNetworkReachability() {

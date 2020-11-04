@@ -110,9 +110,10 @@ extension Book {
 
     func recordForUpdate() -> CKRecord {
         guard let ckRecord = getSystemFieldsRecord() else { fatalError("No stored CKRecord to use for differential update") }
-        for key in pendingRemoteUpdateBitmask.keys() {
-            ckRecord[key] = getValue(for: key)
-        }
+        // TODO Pass in history change item
+//        for key in pendingRemoteUpdateBitmask.keys() {
+//            ckRecord[key] = getValue(for: key)
+//        }
         return ckRecord
     }
 
@@ -134,12 +135,13 @@ extension Book {
         setSystemFields(ckRecord)
 
         // This book may have local changes which we don't want to overwrite with the values on the server.
-        let pendingRemoteUpdate = pendingRemoteUpdateBitmask.keys()
+        //let pendingRemoteUpdate = pendingRemoteUpdateBitmask.keys()
         for key in CKRecordKey.allCases {
-            if pendingRemoteUpdate.contains(key) {
-                os_log("Remote value for key %{public}s in record %{public}s ignored, due to presence of a pending upstream update", type: .debug, key.rawValue, remoteIdentifier!)
-                continue
-            }
+            // TODO Think about how we might manage this without our own bitmask...
+//            if pendingRemoteUpdate.contains(key) {
+//                os_log("Remote value for key %{public}s in record %{public}s ignored, due to presence of a pending upstream update", type: .debug, key.rawValue, remoteIdentifier!)
+//                continue
+//            }
             setValue(ckRecord[key], for: key)
         }
     }

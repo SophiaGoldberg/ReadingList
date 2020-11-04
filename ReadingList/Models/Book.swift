@@ -45,31 +45,7 @@ class Book: NSManagedObject {
         addedWhen = Date()
     }
 
-    // Raw value of a BookKey option set. Represents the keys which have been modified locally but
-    // not uploaded to a remote store.
-    @NSManaged private(set) var keysPendingRemoteUpdate: Int32
     static let ckRecordType = "Book"
-
-    private(set) var pendingRemoteUpdateBitmask: CKRecordKey.Bitmask {
-        get { return CKRecordKey.Bitmask(rawValue: keysPendingRemoteUpdate) }
-        set { keysPendingRemoteUpdate = newValue.rawValue }
-    }
-
-    func addKeysPendingRemoteUpdate(_ keys: [CKRecordKey]) {
-        let newValue = pendingRemoteUpdateBitmask.union(CKRecordKey.Bitmask(keys.map { $0.bitmask }))
-        if pendingRemoteUpdateBitmask != newValue {
-            pendingRemoteUpdateBitmask = newValue
-        }
-    }
-
-    func subtractKeysPendingRemoteUpdate(_ keys: [CKRecordKey]) {
-        let newValue = pendingRemoteUpdateBitmask.subtracting(CKRecordKey.Bitmask(keys.map { $0.bitmask }))
-        if pendingRemoteUpdateBitmask != newValue {
-            pendingRemoteUpdateBitmask = newValue
-        }
-    }
-
-    static let pendingRemoteUpdatesPredicate = NSPredicate(format: "%K != %d", #keyPath(Book.keysPendingRemoteUpdate), 0)
 
     @NSManaged var remoteIdentifier: String?
     @NSManaged private var ckRecordEncodedSystemFields: Data?
@@ -263,23 +239,11 @@ extension Book {
         } else {
             return title
         }
-
-        // Update the modified keys record for Books which have a remote identifier, but only
-        // on the viewContext.
-        if managedObjectContext == PersistentStoreManager.container.viewContext && remoteIdentifier != nil {
-            let changedKeys = changedValues().keys.compactMap(Book.CKRecordKey.from(coreDataKey:)).distinct()
-            addKeysPendingRemoteUpdate(changedKeys)
-        }
     }
 
     func set<T>(_ key: ReferenceWritableKeyPath<Book, T?>, ifNotNil value: T?) {
         if let value = value {
             self[keyPath: key] = value
-        }
-
-        if managedObjectContext == PersistentStoreManager.container.viewContext,
-            let existingRemoteRecord = self.getSystemFieldsRecord() {
-            PendingRemoteDeletionItem(context: managedObjectContext!, ckRecordID: existingRemoteRecord.recordID)
         }
     }
 

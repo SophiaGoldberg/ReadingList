@@ -68,6 +68,7 @@ class BookUploader: ErrorHandlingChangeProcessor<Book>, UpstreamChangeProcessor 
             // fields are the same before we remove them from the changed-field bitmask. We don't need to check
             // any other fields, since the view context will have kept the bitmask up-to-date.
 
+            // TODO: this might all be redundant with persistent history
             switch instruction.uploadType {
             case .insert:
                 instruction.book.remoteIdentifier = instruction.ckRecord.recordID.recordName
@@ -76,7 +77,7 @@ class BookUploader: ErrorHandlingChangeProcessor<Book>, UpstreamChangeProcessor 
                 }
                 if !differingKeys.isEmpty {
                     os_log("%d fields inserted book record %{public}s now differ from local book; updating bitmask.", type: .info, differingKeys.count, instruction.ckRecord.recordID.recordName)
-                    instruction.book.addKeysPendingRemoteUpdate(differingKeys)
+                    //instruction.book.addKeysPendingRemoteUpdate(differingKeys)
                 }
             case .update:
                 let updatedKeys = instruction.delta.filter {
@@ -85,7 +86,7 @@ class BookUploader: ErrorHandlingChangeProcessor<Book>, UpstreamChangeProcessor 
                 if updatedKeys.count != instruction.delta.count {
                     os_log("%d of %d updated fields now differ from local book; retaining bitmask", type: .info, instruction.delta.count - updatedKeys.count, updatedKeys.count)
                 }
-                instruction.book.subtractKeysPendingRemoteUpdate(updatedKeys)
+                //instruction.book.subtractKeysPendingRemoteUpdate(updatedKeys)
             }
         }
 
@@ -129,7 +130,8 @@ class BookUploader: ErrorHandlingChangeProcessor<Book>, UpstreamChangeProcessor 
     override var unprocessedChangedLocalObjectsRequest: NSFetchRequest<Book> {
         let fetchRequest = NSManagedObject.fetchRequest(Book.self, limit: self.batchSize)
         fetchRequest.predicate = NSPredicate.or([
-            Book.pendingRemoteUpdatesPredicate,
+            // TODO: Use persistent history instead
+            //Book.pendingRemoteUpdatesPredicate,
             NSPredicate(format: "%K = nil", #keyPath(Book.remoteIdentifier))
         ])
         return fetchRequest

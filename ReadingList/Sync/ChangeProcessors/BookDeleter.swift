@@ -2,7 +2,8 @@ import Foundation
 import CoreData
 import CloudKit
 import os.log
-
+/*
+ Reimplement without the PendingRemoteDeletionItem object
 class BookDeleter: ErrorHandlingChangeProcessor<PendingRemoteDeletionItem>, UpstreamChangeProcessor {
 
     init(_ context: NSManagedObjectContext, _ remote: BookCloudKitRemote) {
@@ -70,3 +71,4 @@ class BookDeleter: ErrorHandlingChangeProcessor<PendingRemoteDeletionItem>, Upst
         return NSManagedObject.fetchRequest(PendingRemoteDeletionItem.self, limit: batchSize)
     }
 }
+*/
