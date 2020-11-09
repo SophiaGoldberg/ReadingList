@@ -57,6 +57,13 @@ extension NSManagedObjectContext {
         self.saveAndLogIfErrored()
         return true
     }
+    
+    func performAndSaveIfChanged(block: @escaping () -> Void) {
+        perform { [unowned self] in
+            block()
+            self.saveIfChanged()
+        }
+    }
 
     func performAndSave(block: @escaping () -> Void) {
         perform { [unowned self] in

@@ -108,18 +108,29 @@ class BookCloudKitRemote {
         privateDB.add(operation)
     }
 
-    func upload(_ records: [CKRecord], completion: @escaping (Error?) -> Void) {
+    func upload(_ records: [CKRecord], dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) -> Operation {
         let operation = CKModifyRecordsOperation(recordsToSave: records, recordIDsToDelete: nil)
         operation.qualityOfService = .userInitiated
         operation.modifyRecordsCompletionBlock = { _, _, error in
             completion(error)
         }
+        if let dependencies = dependentOperations {
+            for dependentOperation in dependencies {
+                operation.addDependency(dependentOperation)
+            }
+        }
         CKContainer.default().privateCloudDatabase.add(operation)
+        return operation
     }
 
-    func remove(_ recordIDs: [CKRecord.ID], completion: @escaping (Error?) -> Void) {
+    func remove(_ recordIDs: [CKRecord.ID], dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) {
         let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: recordIDs)
         operation.qualityOfService = .userInitiated
+        if let dependencies = dependentOperations {
+            for dependentOperation in dependencies {
+                operation.addDependency(dependentOperation)
+            }
+        }
         operation.modifyRecordsCompletionBlock = { _, _, error in
             completion(error)
         }

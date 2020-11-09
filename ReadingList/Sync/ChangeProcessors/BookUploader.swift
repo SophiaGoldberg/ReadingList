@@ -121,7 +121,8 @@ class BookUploader: ErrorHandlingChangeProcessor<Book>, UpstreamChangeProcessor 
                 ckRecord = book.recordForInsert(into: remote.bookZoneID)
             } else {
                 uploadType = .update
-                ckRecord = book.recordForUpdate()
+                // TODO ckRecord = book.recordForUpdate()
+                ckRecord = book.recordForInsert(into: remote.bookZoneID)
             }
             return BookUploadInstruction(uploadType, book: book, ckRecord: ckRecord)
         }

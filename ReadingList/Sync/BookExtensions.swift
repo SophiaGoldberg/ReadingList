@@ -4,7 +4,14 @@ import ReadingList_Foundation
 
 extension Book {
     func newRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID {
-        let recordName = googleBooksId != nil ? "gbid:\(googleBooksId!)" : "mid:\(manualBookId!)"
+        let recordName: String
+        if let googleBooksId = googleBooksId {
+            recordName = "gbid:\(googleBooksId)"
+        } else if let manualBookId = manualBookId {
+            recordName = "mid:\(manualBookId)"
+        } else {
+            fatalError("No google book or manual book ID")
+        }
         return CKRecord.ID(recordName: recordName, zoneID: zoneID)
     }
 
@@ -22,6 +29,7 @@ extension Book {
     func getValue(for ckRecordKey: CKRecordKey) -> CKRecordValue? { //swiftlint:disable:this cyclomatic_complexity
         switch ckRecordKey {
         case .title: return title as NSString
+        case .subtitle: return subtitle as NSString?
         case .googleBooksId: return googleBooksId as NSString?
         case .isbn13: return isbn13 as NSNumber?
         case .pageCount: return pageCount as NSNumber?
@@ -56,6 +64,7 @@ extension Book {
     func setValue(_ value: CKRecordValue?, for ckRecordKey: CKRecordKey) { //swiftlint:disable:this cyclomatic_complexity
         switch ckRecordKey {
         case .title: title = value as! String
+        case .subtitle: subtitle = value as? String
         case .googleBooksId: googleBooksId = value as? String
         case .isbn13: isbn13 = value as? Int64
         case .pageCount: pageCount = value as? Int32
@@ -103,17 +112,20 @@ extension Book {
     func recordForInsert(into zone: CKRecordZone.ID) -> CKRecord {
         let ckRecord = CKRecord(recordType: Book.ckRecordType, recordID: newRecordID(in: zone))
         for key in Book.CKRecordKey.allCases {
-            ckRecord[key] = getValue(for: key)
+            if let valueForKey = getValue(for: key) {
+                ckRecord[key] = valueForKey
+            }
         }
         return ckRecord
     }
 
-    func recordForUpdate() -> CKRecord {
+    func recordForUpdate(changedCoreDataKeys: [String]) -> CKRecord? {
         guard let ckRecord = getSystemFieldsRecord() else { fatalError("No stored CKRecord to use for differential update") }
-        // TODO Pass in history change item
-//        for key in pendingRemoteUpdateBitmask.keys() {
-//            ckRecord[key] = getValue(for: key)
-//        }
+        let changeCkRecordKeys = changedCoreDataKeys.compactMap(CKRecordKey.from(coreDataKey:))
+        if changeCkRecordKeys.isEmpty { return nil }
+        for changedKey in changeCkRecordKeys {
+            ckRecord[changedKey] = getValue(for: changedKey)
+        }
         return ckRecord
     }
 
@@ -134,7 +146,7 @@ extension Book {
 
         setSystemFields(ckRecord)
 
-        // This book may have local changes which we don't want to overwrite with the values on the server.
+        // TODO This book may have local changes which we don't want to overwrite with the values on the server.
         //let pendingRemoteUpdate = pendingRemoteUpdateBitmask.keys()
         for key in CKRecordKey.allCases {
             // TODO Think about how we might manage this without our own bitmask...

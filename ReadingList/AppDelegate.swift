@@ -10,7 +10,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     let upgradeManager = UpgradeManager()
 
     /// Will be nil until after the persistent store is initialised.
-    var syncCoordinator: SyncCoordinator?
+    var syncCoordinator: Any?
 
     static var shared: AppDelegate {
         return UIApplication.shared.delegate as! AppDelegate
@@ -38,9 +38,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             self.launchManager.initialiseAfterPersistentStoreLoad()
 
             // Initialise the Sync Coordinator which will maintain iCloud synchronisation
-            self.syncCoordinator = SyncCoordinator(container: PersistentStoreManager.container)
-            if GeneralSettings.iCloudSyncEnabled {
-                self.syncCoordinator!.start()
+            if #available(iOS 13.0, *) {
+                self.syncCoordinator = SyncCoordinator(container: PersistentStoreManager.container)
+                if GeneralSettings.iCloudSyncEnabled {
+                    (self.syncCoordinator as! SyncCoordinator).start()
+                }
             }
         }
 
@@ -71,7 +73,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        if GeneralSettings.iCloudSyncEnabled, let syncCoordinator = syncCoordinator, syncCoordinator.remote.isInitialised {
+        guard #available(iOS 13.0, *) else { return }
+        if GeneralSettings.iCloudSyncEnabled, let syncCoordinator = (self.syncCoordinator as? SyncCoordinator), syncCoordinator.remote.isInitialised {
             syncCoordinator.remoteNotificationReceived(applicationCallback: completionHandler)
         }
     }

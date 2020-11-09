@@ -57,15 +57,17 @@ public struct DebugSettings: View {
                         fatalError("Test Crash")
                     }.foregroundColor(.red)
                 }
-                Section(header: Text("iCloud Sync")) {
-                    Button("Simulate remote change notification") {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                            if GeneralSettings.iCloudSyncEnabled, let syncCoordinator = AppDelegate.shared.syncCoordinator, syncCoordinator.remote.isInitialised {
-                                syncCoordinator.remoteNotificationReceived { _ in }
+                    Section(header: Text("iCloud Sync")) {
+                        Button("Simulate remote change notification") {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                if GeneralSettings.iCloudSyncEnabled, let syncCoordinator = AppDelegate.shared.syncCoordinator as? SyncCoordinator, syncCoordinator.remote.isInitialised {
+                                    syncCoordinator.remoteNotificationReceived { _ in }
+                                }
                             }
-                        }
-                    }.disabled(!GeneralSettings.iCloudSyncEnabled || AppDelegate.shared.syncCoordinator?.remote.isInitialised != true)
-                }
+                        }.disabled(
+                            !GeneralSettings.iCloudSyncEnabled || (AppDelegate.shared.syncCoordinator as? SyncCoordinator)?.remote.isInitialised != true
+                        )
+                    }
             }.navigationBarTitle("Debug Settings", displayMode: .inline)
             .navigationBarItems(trailing: Button("Dismiss") {
                 onDismiss()

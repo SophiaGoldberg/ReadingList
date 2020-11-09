@@ -21,8 +21,15 @@ class PersistentStoreManager {
         // Register our custom transformer for Author tranformable attributes
         AuthorTransformer.register()
 
+        // Set up the container describing a manually migarted store with persistent history enabled.
+        container = NSPersistentContainer(name: storeName)
+        let description = NSPersistentStoreDescription(url: storeLocation)
+        description.shouldInferMappingModelAutomatically = false
+        description.shouldMigrateStoreAutomatically = false
+        description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        container.persistentStoreDescriptions = [description]
+
         // Migrate the store to the latest version if necessary and then initialise
-        container = NSPersistentContainer(name: storeName, manuallyMigratedStoreAt: storeLocation)
         try container.migrateAndLoad(BooksModelVersion.self) {
             self.container.viewContext.automaticallyMergesChangesFromParent = true
             self.container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump

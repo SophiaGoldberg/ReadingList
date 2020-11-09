@@ -4,14 +4,14 @@ import UIKit
 import CloudKit
 import os.log
 
-class BookDownloader {
+struct BookRemoteChangeProcessor {
 
     init(_ context: NSManagedObjectContext, _ remote: BookCloudKitRemote) {
         self.context = context
         self.remote = remote
     }
 
-    let debugDescription = String(describing: BookDownloader.self)
+    let debugDescription = String(describing: BookRemoteChangeProcessor.self)
     let context: NSManagedObjectContext
     let remote: BookCloudKitRemote
 

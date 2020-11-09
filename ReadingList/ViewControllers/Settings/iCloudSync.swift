@@ -5,15 +5,17 @@ import SVProgressHUD
 import Reachability
 import CoreData
 
+@available(iOS 13.0, *)
 class CloudSync: UITableViewController {
 
     @IBOutlet private weak var enabledSwitch: UISwitch!
+    var syncCoordinator: SyncCoordinator? { AppDelegate.shared.syncCoordinator as? SyncCoordinator }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         monitorThemeSetting()
         enabledSwitch.isOn = GeneralSettings.iCloudSyncEnabled
-        if !GeneralSettings.iCloudSyncEnabled && AppDelegate.shared.syncCoordinator?.reachability.connection == .unavailable {
+        if !GeneralSettings.iCloudSyncEnabled && syncCoordinator?.reachability.connection == .unavailable {
             enabledSwitch.isEnabled = false
         }
         NotificationCenter.default.addObserver(self, selector: #selector(networkConnectivityDidChange), name: .reachabilityChanged, object: nil)
@@ -21,7 +23,7 @@ class CloudSync: UITableViewController {
 
     @objc private func networkConnectivityDidChange() {
         guard !GeneralSettings.iCloudSyncEnabled else { return }
-        enabledSwitch.isEnabled = AppDelegate.shared.syncCoordinator?.reachability.connection != .unavailable
+        enabledSwitch.isEnabled = syncCoordinator?.reachability.connection != .unavailable
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -46,7 +48,7 @@ class CloudSync: UITableViewController {
     }
 
     private func syncSwitchTurnedOn() {
-        guard let syncCoordinator = AppDelegate.shared.syncCoordinator else { fatalError("Unexpected nil sync coordinator") }
+        guard let syncCoordinator = syncCoordinator else { fatalError("Unexpected nil sync coordinator") }
 
         SVProgressHUD.show(withStatus: "Enabling iCloud")
         DispatchQueue.main.async {
@@ -60,7 +62,7 @@ class CloudSync: UITableViewController {
                         self.requestSyncMergeAction()
                     } else {
                         GeneralSettings.iCloudSyncEnabled = true
-                        AppDelegate.shared.syncCoordinator!.start()
+                        syncCoordinator.start()
                     }
                 }
             }
@@ -84,7 +86,7 @@ class CloudSync: UITableViewController {
             """, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Merge", style: .default) { _ in
             GeneralSettings.iCloudSyncEnabled = true
-            AppDelegate.shared.syncCoordinator!.start()
+            self.syncCoordinator!.start()
         })
         alert.addAction(UIAlertAction(title: "Replace", style: .destructive) { [unowned self] _ in
             self.presentConfirmReplaceDialog()
@@ -105,7 +107,7 @@ class CloudSync: UITableViewController {
         alert.addAction(UIAlertAction(title: "Replace", style: .destructive) { _ in
             PersistentStoreManager.delete(type: Book.self)
             GeneralSettings.iCloudSyncEnabled = true
-            AppDelegate.shared.syncCoordinator!.start()
+            self.syncCoordinator!.start()
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { [unowned self] _ in
             self.enabledSwitch.setOn(false, animated: true)
@@ -115,7 +117,7 @@ class CloudSync: UITableViewController {
     }
 
     private func syncSwitchTurnedOff() {
-        guard let syncCoordinator = AppDelegate.shared.syncCoordinator else { fatalError("Unexpected nil sync coordinator") }
+        guard let syncCoordinator = syncCoordinator else { fatalError("Unexpected nil sync coordinator") }
 
         let alert = UIAlertController(title: "Disable Sync?", message: """
             If you disable iCloud sync, changes you make will no longer be \
@@ -123,7 +125,7 @@ class CloudSync: UITableViewController {
             """, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Disable", style: .destructive) { _ in
             // TODO: Consider whether change tokens should be discarded, remote identifiers should be deleted, etc
-            syncCoordinator.stop()
+            self.syncCoordinator!.stop()
         })
         alert.addAction(UIAlertAction(title: "Keep Enabled", style: .cancel) { [unowned self] _ in
             self.enabledSwitch.isOn = true
