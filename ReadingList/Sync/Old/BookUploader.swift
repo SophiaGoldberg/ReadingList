@@ -2,7 +2,7 @@ import Foundation
 import CoreData
 import CloudKit
 import os.log
-
+/*
 class BookUploader: ErrorHandlingChangeProcessor<Book>, UpstreamChangeProcessor {
 
     init(_ context: NSManagedObjectContext, _ remote: BookCloudKitRemote) {
@@ -165,3 +165,4 @@ private struct BookUploadInstruction {
         }
     }
 }
+*/

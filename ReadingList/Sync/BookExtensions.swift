@@ -1,8 +1,11 @@
 import CloudKit
+import CoreData
 import os.log
 import ReadingList_Foundation
 
-extension Book {
+extension Book: CKRecordRepresentable {
+    static let ckRecordType = "Book"
+
     func newRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID {
         let recordName: String
         if let googleBooksId = googleBooksId {
@@ -120,8 +123,12 @@ extension Book {
     }
 
     func recordForUpdate(changedCoreDataKeys: [String]) -> CKRecord? {
-        guard let ckRecord = getSystemFieldsRecord() else { fatalError("No stored CKRecord to use for differential update") }
-        let changeCkRecordKeys = changedCoreDataKeys.compactMap(CKRecordKey.from(coreDataKey:))
+        guard let ckRecord = getSystemFieldsRecord() else {
+            return nil
+            // TODO: Ought we error here?
+            //fatalError("No stored CKRecord to use for differential update")
+        }
+        let changeCkRecordKeys = changedCoreDataKeys.compactMap(CKRecordKey.from(coreDataKey:)).distinct()
         if changeCkRecordKeys.isEmpty { return nil }
         for changedKey in changeCkRecordKeys {
             ckRecord[changedKey] = getValue(for: changedKey)
@@ -133,7 +140,7 @@ extension Book {
      Updates values in this book with those from the provided CKRecord. Values in this books which have a pending
      change are not updated.
     */
-    func update(from ckRecord: CKRecord) {
+    func update(from ckRecord: CKRecord, excluding excludedKeys: [CKRecordKey]?) {
         if let existingCKRecordSystemFields = getSystemFieldsRecord(), existingCKRecordSystemFields.recordChangeTag == ckRecord.recordChangeTag {
             os_log("CKRecord %{public}s has same change tag as local book; skipping update", type: .debug, ckRecord.recordID.recordName)
             return
@@ -146,14 +153,12 @@ extension Book {
 
         setSystemFields(ckRecord)
 
-        // TODO This book may have local changes which we don't want to overwrite with the values on the server.
-        //let pendingRemoteUpdate = pendingRemoteUpdateBitmask.keys()
+        // This book may have local changes which we don't want to overwrite with the values on the server.
         for key in CKRecordKey.allCases {
-            // TODO Think about how we might manage this without our own bitmask...
-//            if pendingRemoteUpdate.contains(key) {
-//                os_log("Remote value for key %{public}s in record %{public}s ignored, due to presence of a pending upstream update", type: .debug, key.rawValue, remoteIdentifier!)
-//                continue
-//            }
+            if let excludedKeys = excludedKeys, excludedKeys.contains(key) {
+                os_log(.info, log: .syncDownstream, "CKRecordKey '%{public}s' not used to update local store due to pending local change", key.rawValue)
+                continue
+            }
             setValue(ckRecord[key], for: key)
         }
     }

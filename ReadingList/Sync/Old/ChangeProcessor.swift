@@ -3,6 +3,7 @@ import CoreData
 import CloudKit
 import os.log
 
+/*
 protocol UpstreamChangeProcessor: CustomDebugStringConvertible {
     var batchSize: Int { get set }
     func processLocalChanges(_ objects: [NSManagedObject], completion: @escaping () -> Void)
@@ -78,3 +79,4 @@ class ErrorHandlingChangeProcessor<LocalType> where LocalType: NSManagedObject {
         }
     }
 }
+*/

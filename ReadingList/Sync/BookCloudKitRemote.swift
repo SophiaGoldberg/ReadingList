@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 import CloudKit
+import PersistedPropertyWrapper
 import os.log
 
 class BookCloudKitRemote {
@@ -10,6 +11,9 @@ class BookCloudKitRemote {
 
     private(set) var userRecordName: String!
     private(set) var bookZoneID: CKRecordZone.ID!
+
+    @Persisted("bookZoneAndSubscriptionCreated", defaultValue: false)
+    var bookZoneAndSubscriptionCreated: Bool
 
     var privateDB: CKDatabase {
         return CKContainer.default().privateCloudDatabase
@@ -37,6 +41,11 @@ class BookCloudKitRemote {
     private func createZoneAndSubscription(userRecordName: String, completion: @escaping (Error?) -> Void) {
         self.userRecordName = userRecordName
         self.bookZoneID = CKRecordZone.ID(zoneName: bookZoneName, ownerName: userRecordName)
+        if bookZoneAndSubscriptionCreated {
+            os_log(.info, "Book zone and subscription already exist (apparently)")
+            completion(nil)
+            return
+        }
 
         // Ensure the book zone exists. We're not calling the error callback here, since the subsequent operation is
         // not cancelled if this one fails. If the zone fails to get created, then the second operation will fail too.
@@ -59,12 +68,13 @@ class BookCloudKitRemote {
         let modifySubscriptionOperation = CKModifySubscriptionsOperation(subscriptionsToSave: [subscription], subscriptionIDsToDelete: nil)
         modifySubscriptionOperation.addDependency(createZoneOperation)
         modifySubscriptionOperation.qualityOfService = .userInitiated
-        modifySubscriptionOperation.modifySubscriptionsCompletionBlock = { _, _, error in
+        modifySubscriptionOperation.modifySubscriptionsCompletionBlock = { [weak self] _, _, error in
             if let error = error {
                 os_log("Book record zone subscription creation failed: %{public}s", type: .error, error.localizedDescription)
                 completion(error)
             } else {
                 os_log("Record zone subscription created", type: .info)
+                self?.bookZoneAndSubscriptionCreated = true
                 completion(nil)
             }
         }
@@ -109,22 +119,16 @@ class BookCloudKitRemote {
     }
 
     func upload(_ records: [CKRecord], dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) -> Operation {
-        let operation = CKModifyRecordsOperation(recordsToSave: records, recordIDsToDelete: nil)
-        operation.qualityOfService = .userInitiated
-        operation.modifyRecordsCompletionBlock = { _, _, error in
-            completion(error)
-        }
-        if let dependencies = dependentOperations {
-            for dependentOperation in dependencies {
-                operation.addDependency(dependentOperation)
-            }
-        }
-        CKContainer.default().privateCloudDatabase.add(operation)
-        return operation
+        upload(recordsToSave: records, recordsToDelete: [], dependentOperations: dependentOperations, completion: completion)
     }
 
     func remove(_ recordIDs: [CKRecord.ID], dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) {
-        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: recordIDs)
+        upload(recordsToSave: [], recordsToDelete: recordIDs, dependentOperations: dependentOperations, completion: completion)
+    }
+
+    @discardableResult
+    func upload(recordsToSave: [CKRecord]?, recordsToDelete: [CKRecord.ID]?, dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) -> Operation {
+        let operation = CKModifyRecordsOperation(recordsToSave: recordsToSave, recordIDsToDelete: recordsToDelete)
         operation.qualityOfService = .userInitiated
         if let dependencies = dependentOperations {
             for dependentOperation in dependencies {
@@ -135,5 +139,6 @@ class BookCloudKitRemote {
             completion(error)
         }
         CKContainer.default().privateCloudDatabase.add(operation)
+        return operation
     }
 }

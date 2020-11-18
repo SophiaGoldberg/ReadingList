@@ -215,6 +215,15 @@ public extension Array where Element: Equatable {
     func containsAll(_ items: [Element]) -> Bool {
         return items.allSatisfy { self.contains($0) }
     }
+
+    func chunked(by distance: Int) -> [[Element]] {
+        let indicesSequence = stride(from: startIndex, to: endIndex, by: distance)
+        let array: [[Element]] = indicesSequence.map {
+            let newIndex = $0.advanced(by: distance) > endIndex ? endIndex : $0.advanced(by: distance)
+            return Array(self[$0 ..< newIndex])
+        }
+        return array
+    }
 }
 
 public extension Date {

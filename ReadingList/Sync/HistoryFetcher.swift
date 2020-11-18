@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import os.log
 
 @available(iOS 13.0, *)
 struct PersistentHistoryFetcher {
@@ -11,11 +12,11 @@ struct PersistentHistoryFetcher {
         return fetchHistory(fetchRequest)
     }
 
-    func fetchLatest() -> NSPersistentHistoryTransaction? {
-        let fetchRequest = createFetchRequestForLatest()
-        return fetchHistory(fetchRequest).first
+    func fetch(fromDate date: Date) -> [NSPersistentHistoryTransaction] {
+        let fetchRequest = createFetchRequest(fromDate: date)
+        return fetchHistory(fetchRequest)
     }
-    
+
     private func fetchHistory(_ fetchRequest: NSPersistentHistoryChangeRequest) -> [NSPersistentHistoryTransaction] {
         let historyResult: NSPersistentHistoryResult
         do {
@@ -24,7 +25,7 @@ struct PersistentHistoryFetcher {
             }
             historyResult = historyExecutionResult
         } catch {
-            assertionFailure("Failure while fetching transaction history")
+            os_log(.error, "Failed to fetch transaction history with token")
             return []
         }
         guard let history = historyResult.result as? [NSPersistentHistoryTransaction] else {
@@ -36,24 +37,29 @@ struct PersistentHistoryFetcher {
 
     private func createFetchRequest(fromToken token: NSPersistentHistoryToken) -> NSPersistentHistoryChangeRequest {
         let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: token)
-
-        guard let fetchRequest = NSPersistentHistoryTransaction.fetchRequest else { preconditionFailure() }
-        if let contextName = context.name {
-            // Only look at transactions not from our current context
-            fetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(NSPersistentHistoryTransaction.contextName), contextName)
-        }
-        historyFetchRequest.fetchRequest = fetchRequest
-
+        historyFetchRequest.fetchRequest = fetchRequest()
         return historyFetchRequest
     }
-    
-    private func createFetchRequestForLatest() -> NSPersistentHistoryChangeRequest {
-        guard let fetchRequest = NSPersistentHistoryTransaction.fetchRequest else { preconditionFailure() }
-        fetchRequest.fetchLimit = 1
-        fetchRequest.sortDescriptors = [NSSortDescriptor(#keyPath(NSPersistentHistoryTransaction.timestamp), ascending: false)]
-        return NSPersistentHistoryChangeRequest.fetchHistory(withFetch: fetchRequest)
+
+    private func createFetchRequest(fromDate date: Date) -> NSPersistentHistoryChangeRequest {
+        let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: date)
+        historyFetchRequest.fetchRequest = fetchRequest()
+        return historyFetchRequest
     }
-    
+
+    private func fetchRequest() -> NSFetchRequest<NSFetchRequestResult>? {
+        guard let fetchRequest = NSPersistentHistoryTransaction.fetchRequest else {
+            os_log(.error, "NSPersistentHistoryTransaction.fetchRequest was nil")
+            return nil
+        }
+
+        if let contextName = context.name {
+            // Only look at transactions not from our current context
+            fetchRequest.predicate = NSPredicate(format: "%K = %@", #keyPath(NSPersistentHistoryTransaction.contextName), contextName)
+        }
+        return fetchRequest
+    }
+
     func deleteHistory(beforeToken token: NSPersistentHistoryToken) {
         let deletionRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: token)
         do {

@@ -45,8 +45,6 @@ class Book: NSManagedObject {
         addedWhen = Date()
     }
 
-    static let ckRecordType = "Book"
-
     @NSManaged var remoteIdentifier: String?
     @NSManaged private var ckRecordEncodedSystemFields: Data?
 
