@@ -33,6 +33,7 @@ class PersistentStoreManager {
         try container.migrateAndLoad(BooksModelVersion.self) {
             self.container.viewContext.automaticallyMergesChangesFromParent = true
             self.container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+            self.container.viewContext.name = "ViewContext"
             completion()
         }
     }

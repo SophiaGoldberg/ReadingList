@@ -28,11 +28,7 @@ struct PersistentHistoryFetcher {
             os_log(.error, "Failed to fetch transaction history with token")
             return []
         }
-        guard let history = historyResult.result as? [NSPersistentHistoryTransaction] else {
-            fatalError("Unexpected result type when fetching transaction history")
-        }
-
-        return history
+        return historyResult.result as! [NSPersistentHistoryTransaction]
     }
 
     private func createFetchRequest(fromToken token: NSPersistentHistoryToken) -> NSPersistentHistoryChangeRequest {
@@ -54,8 +50,8 @@ struct PersistentHistoryFetcher {
         }
 
         if let contextName = context.name {
-            // Only look at transactions not from our current context
-            fetchRequest.predicate = NSPredicate(format: "%K = %@", #keyPath(NSPersistentHistoryTransaction.contextName), contextName)
+            // Only look at transactions from our current context
+            fetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(NSPersistentHistoryTransaction.contextName), contextName)
         }
         return fetchRequest
     }

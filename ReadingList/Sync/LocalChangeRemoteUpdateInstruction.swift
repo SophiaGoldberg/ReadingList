@@ -1,85 +1,16 @@
 import Foundation
 import CoreData
-import PersistedPropertyWrapper
 import os.log
 
-extension OSLog {
-    static let syncLocalChangeProcessor = OSLog(subsystem: Bundle.main.bundleIdentifier!, category: "sync_upstream")
-}
-
-@available(iOS 13.0, *)
-class BookLocalChangeProcessor {
-    let syncContext: NSManagedObjectContext
-    let historyFetcher: PersistentHistoryFetcher
-    let remote: BookCloudKitRemote
-
-    init(syncContext: NSManagedObjectContext, viewContext: NSManagedObjectContext, remote: BookCloudKitRemote) {
-        self.syncContext = syncContext
-        self.historyFetcher = PersistentHistoryFetcher(context: viewContext)
-        self.remote = remote
-    }
-
-    @Persisted("localChangeToken")
-    var tokenData: Data?
-
-    var historyToken: NSPersistentHistoryToken? {
-        get {
-            guard let tokenData = tokenData else { return nil }
-            return try! NSKeyedUnarchiver.unarchivedObject(ofClass: NSPersistentHistoryToken.self, from: tokenData)
-        }
-        set {
-            if let newValue = newValue {
-                tokenData = try! NSKeyedArchiver.archivedData(withRootObject: newValue, requiringSecureCoding: true)
-            } else {
-                tokenData = nil
-            }
-        }
-    }
-
-    func getRemoteUpdateInstructions() -> LocalChangeRemoteUpdateInstruction? {
-        let transactions: [NSPersistentHistoryTransaction]
-        if let historyToken = historyToken {
-            transactions = historyFetcher.fetch(fromToken: historyToken)
-            os_log(.debug, log: .syncLocalChangeProcessor, "%d transactions retrieved using token", transactions.count)
-        } else {
-            transactions = historyFetcher.fetch(fromDate: Date().addingTimeInterval(-5))
-            os_log(.debug, log: .syncLocalChangeProcessor, "%d transactions retrieved using timespan", transactions.count)
-        }
-
-        guard let lastTransaction = transactions.last else { return nil }
-        os_log(.debug, log: .syncLocalChangeProcessor, "Processing %d transactions", transactions.count)
-
-        let localChanges = transactions.compactMap { $0.localChangeRepresentations() }.flatMap { $0 }
-        return localChanges.remoteInstruction(context: syncContext, zoneId: remote.bookZoneID, finalTransactionToken: lastTransaction.token)
-    }
-
-    func performRemoteUpdate(_ remoteUpdate: LocalChangeRemoteUpdateInstruction, completion: @escaping () -> Void) {
-        guard !remoteUpdate.isEmpty else {
-            completion()
-            return
-        }
-
-        remote.upload(recordsToSave: remoteUpdate.allCKRecords(), recordsToDelete: remoteUpdate.allDeletionIDs()) { error in
-            os_log(.info, log: .syncLocalChangeProcessor, "Remote upload operation response received %s", error != nil ? "(errored)" : "")
-            self.historyToken = remoteUpdate.finalTransactionToken
-            completion()
-        }
-    }
-}
-
-protocol CKRecordRepresentable {
-    static var ckRecordType: String { get }
-    var isDeleted: Bool { get }
-    func recordForInsert(into zone: CKRecordZone.ID) -> CKRecord
-    func recordForUpdate(changedCoreDataKeys: [String]) -> CKRecord?
-}
-
-struct LocalChangeRemoteUpdateInstruction: CustomDebugStringConvertible {
+struct LocalChangeRemoteUpdateInstruction: CustomDebugStringConvertible, Equatable {
     let finalTransactionToken: NSPersistentHistoryToken
+    var isEmpty: Bool { deletions.isEmpty && updates.isEmpty && inserts.isEmpty }
     var deletions = Set<String>()
     var updates = [String: CKRecord]()
     var inserts = [String: CKRecord]()
-    var isEmpty: Bool { deletions.isEmpty && updates.isEmpty && inserts.isEmpty }
+    var operationCount: Int {
+        return deletions.count + updates.count + inserts.count
+    }
 
     func allCKRecords() -> [CKRecord] {
         Array(inserts.values) + Array(updates.values)
@@ -94,6 +25,12 @@ struct LocalChangeRemoteUpdateInstruction: CustomDebugStringConvertible {
 
     var debugDescription: String {
         isEmpty ? "Empty" : "\(updates.count) updates, \(inserts.count) inserts, \(deletions.count) deletions"
+    }
+
+    mutating func appendLocalChanges(_ localChanges: [LocalChange]) {
+        for change in localChanges {
+            appendLocalChange(change)
+        }
     }
 
     mutating func appendLocalChange(_ localChange: LocalChange) {

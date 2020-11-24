@@ -1,53 +1,55 @@
 import Foundation
-import CoreData
-import UIKit
 import CloudKit
+import CoreData
 import os.log
+import PersistedPropertyWrapper
 
-@available(iOS 13.0, *)
-struct BookRemoteChangeProcessor {
+class RemotePullProcessor {
+    init(remote: BookCloudKitRemote, syncContext: NSManagedObjectContext, delegate: RemotePullProcessorDelegate) {
+        self.remote = remote
+        self.syncContext = syncContext
+        self.delegate = delegate
+    }
 
-    let context: NSManagedObjectContext
     let remote: BookCloudKitRemote
-    weak var syncCoordinator: SyncCoordinator?
+    let syncContext: NSManagedObjectContext
+    weak var delegate: RemotePullProcessorDelegate?
 
-    func processRemoteChanges(callback: ((UIBackgroundFetchResult) -> Void)? = nil) {
-        let storedChangeToken = ChangeToken.get(fromContext: context, for: remote.bookZoneID)
-        remote.fetchRecordChanges(changeToken: storedChangeToken?.changeToken,
-                                  recordDeletion: processRemoteDeletion,
-                                  recordChange: processRemoteChange,
-                                  changeTokenUpdate: onChangeTokenUpdate) { changeToken, error, hasChanges in
-            self.context.perform {
-                if let error = error {
-                    self.handleFetchChangesError(error: error, changeToken: storedChangeToken)
-                    callback?(.failed)
-                } else if hasChanges {
-                    if let changeToken = changeToken {
-                        os_log("Updating change token", log: .syncDownstream, type: .info)
-                        let changeTokenToPersist = storedChangeToken ?? ChangeToken(context: self.context, zoneID: self.remote.bookZoneID)
-                        changeTokenToPersist.changeToken = changeToken
-                    }
-                    self.context.saveAndLogIfErrored()
-                    callback?(.newData)
-                } else {
-                    callback?(.noData)
+    @Persisted(archivedDataKey: "sync-server-change-token")
+    var serverChangeToken: CKServerChangeToken?
+
+    func pullOperation() -> CKDatabaseOperation {
+        let operationId = UUID().uuidString
+        let fetchOperation = remote.fetchRecordChangesOperation(
+            changeToken: serverChangeToken,
+            recordDeletion: processRemoteDeletion,
+            recordChange: processRemoteChange(_:),
+            changeTokenUpdate: onChangeTokenUpdate(_:)) { [weak self] error in
+            guard let self = self else { return }
+            if let error = error {
+                self.handleFetchChangesError(error: error)
+            }
+            if self.syncContext.hasChanges {
+                self.syncContext.performAndWait {
+                    self.syncContext.saveAndLogIfErrored()
                 }
+                self.delegate?.onPullSuccess(operationName: operationId)
             }
         }
+        fetchOperation.name = operationId
+        return fetchOperation
     }
 
     private func onChangeTokenUpdate(_ newToken: CKServerChangeToken) {
-        handleChangeTokenChange(newToken, zone: remote.bookZoneID)
+        serverChangeToken = newToken
     }
 
-    private func handleFetchChangesError(error: Error, changeToken: ChangeToken?) {
+    private func handleFetchChangesError(error: Error) {
         if let ckError = error as? CKError {
             switch ckError.strategy {
             case .resetChangeToken:
                 os_log("resetChangeToken error received: deleting change token...", log: .syncDownstream, type: .error)
-                self.context.perform {
-                    changeToken!.deleteAndSave()
-                }
+                serverChangeToken = nil
             case .disableSync:
                 NotificationCenter.default.post(name: .DisableCloudSync, object: ckError)
             case .disableSyncUnexpectedError:
@@ -64,7 +66,7 @@ struct BookRemoteChangeProcessor {
     }
 
     func processRemoteDeletion(_ id: CKRecord.ID) {
-        context.perform {
+        syncContext.performAndWait {
             if let localBook = self.locallyPresentBook(withId: id) {
                 os_log("Deleting found local book", log: .syncDownstream, type: .info)
                 localBook.delete()
@@ -73,23 +75,8 @@ struct BookRemoteChangeProcessor {
     }
 
     func processRemoteChange(_ ckRecord: CKRecord) {
-        context.perform {
+        syncContext.performAndWait {
             self.downloadBook(ckRecord)
-        }
-    }
-
-    func handleChangeTokenChange(_ changeToken: CKServerChangeToken, zone: CKRecordZone.ID) {
-        context.perform {
-            let changeTokenToPersist: ChangeToken
-            if let changeToken = ChangeToken.get(fromContext: self.context, for: zone) {
-                os_log("Updating existing persisted change token", log: .syncDownstream, type: .info)
-                changeTokenToPersist = changeToken
-            } else {
-                os_log("No existing persisted change token exists - creating one", log: .syncDownstream, type: .info)
-                changeTokenToPersist = ChangeToken(context: self.context, zoneID: zone)
-            }
-            changeTokenToPersist.changeToken = changeToken
-            self.context.saveAndLogIfErrored()
         }
     }
 
@@ -97,11 +84,11 @@ struct BookRemoteChangeProcessor {
         if remoteBook.recordType == Book.ckRecordType {
             if let localBook = self.lookupLocalBook(for: remoteBook) {
                 os_log("Updating existing local book with remote record %{public}s", log: .syncDownstream, type: .info, remoteBook.recordID.recordName)
-                let keysPendingUpdate = syncCoordinator?.pendingRemoteUpdates?.updates[remoteBook.recordID.recordName]?.changedKeys().compactMap(Book.CKRecordKey.init(rawValue:))
+                let keysPendingUpdate = delegate?.pendingUpdateRecordKeys(for: remoteBook.recordID.recordName)?.compactMap(Book.CKRecordKey.init(rawValue:))
                 localBook.update(from: remoteBook, excluding: keysPendingUpdate)
             } else {
                 os_log("Creating new book from remote record %{public}s", log: .syncDownstream, type: .info, remoteBook.recordID.recordName)
-                let book = Book(context: self.context)
+                let book = Book(context: self.syncContext)
                 book.update(from: remoteBook, excluding: nil)
             }
         }
@@ -111,7 +98,7 @@ struct BookRemoteChangeProcessor {
         let remoteIdLookup = NSManagedObject.fetchRequest(Book.self)
         remoteIdLookup.predicate = Book.withRemoteIdentifier(remoteBook.recordID.recordName)
         remoteIdLookup.fetchLimit = 1
-        if let book = (try! context.fetch(remoteIdLookup)).first {
+        if let book = (try! syncContext.fetch(remoteIdLookup)).first {
             os_log("Found local book with specified remote identifier %{public}s", log: .syncDownstream, type: .debug, remoteBook.recordID.recordName)
             return book
         }
@@ -119,7 +106,7 @@ struct BookRemoteChangeProcessor {
         let localIdLookup = NSManagedObject.fetchRequest(Book.self)
         localIdLookup.fetchLimit = 1
         localIdLookup.predicate = Book.candidateBookForRemoteIdentifier(remoteBook.recordID)
-        if let book = (try! context.fetch(localIdLookup)).first {
+        if let book = (try! syncContext.fetch(localIdLookup)).first {
             os_log("Found candidate local book corresponding to remote identifier %{public}s", log: .syncDownstream, type: .debug, remoteBook.recordID.recordName)
             return book
         }
@@ -131,6 +118,11 @@ struct BookRemoteChangeProcessor {
         os_log("Fetching local book corresponding to supplied remote identifier %{public}s", log: .syncDownstream, type: .debug, id.recordName)
         let fetchRequest = NSManagedObject.fetchRequest(Book.self)
         fetchRequest.predicate = Book.withRemoteIdentifier(id.recordName)
-        return (try! context.fetch(fetchRequest)).first
+        return (try! syncContext.fetch(fetchRequest)).first
     }
+}
+
+protocol RemotePullProcessorDelegate: class {
+    func onPullSuccess(operationName: String)
+    func pendingUpdateRecordKeys(for id: String) -> Set<String>?
 }

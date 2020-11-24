@@ -15,7 +15,7 @@ class BookCloudKitRemote {
     @Persisted("bookZoneAndSubscriptionCreated", defaultValue: false)
     var bookZoneAndSubscriptionCreated: Bool
 
-    var privateDB: CKDatabase {
+    var privateCloudDatabase: CKDatabase {
         return CKContainer.default().privateCloudDatabase
     }
 
@@ -59,7 +59,7 @@ class BookCloudKitRemote {
             }
         }
         createZoneOperation.qualityOfService = .userInitiated
-        privateDB.add(createZoneOperation)
+        privateCloudDatabase.add(createZoneOperation)
 
         // Create a subscribe and to it
         let subscription = CKRecordZoneSubscription(zoneID: bookZone.zoneID, subscriptionID: "BookChanges")
@@ -78,12 +78,12 @@ class BookCloudKitRemote {
                 completion(nil)
             }
         }
-        privateDB.add(modifySubscriptionOperation)
+        privateCloudDatabase.add(modifySubscriptionOperation)
     }
 
-    func fetchRecordChanges(changeToken: CKServerChangeToken?, recordDeletion: @escaping (CKRecord.ID) -> Void,
-                            recordChange: @escaping (CKRecord) -> Void, changeTokenUpdate: @escaping (CKServerChangeToken) -> Void,
-                            completion: @escaping (CKServerChangeToken?, Error?, Bool) -> Void) {
+    func fetchRecordChangesOperation(changeToken: CKServerChangeToken?, recordDeletion: @escaping (CKRecord.ID) -> Void,
+                                     recordChange: @escaping (CKRecord) -> Void, changeTokenUpdate: @escaping (CKServerChangeToken) -> Void,
+                                     completion: @escaping (Error?) -> Void) -> CKDatabaseOperation {
         if changeToken == nil {
             os_log("Fetching record changes without change token", type: .info)
         } else {
@@ -95,50 +95,63 @@ class BookCloudKitRemote {
             options.previousServerChangeToken = changeToken
         }
 
-        var hasChanges = false
         let operation = CKFetchRecordZoneChangesOperation(recordZoneIDs: [bookZoneID], configurationsByRecordZoneID: [bookZoneID: options])
         operation.qualityOfService = .userInitiated
+
         operation.recordChangedBlock = { record in
             recordChange(record)
-            hasChanges = true
         }
         operation.recordWithIDWasDeletedBlock = { recordID, _ in
             recordDeletion(recordID)
-            hasChanges = true
         }
         operation.recordZoneChangeTokensUpdatedBlock = { _, changeToken, _ in
             os_log("Record fetch change token updated", type: .info)
             if let changeToken = changeToken { changeTokenUpdate(changeToken) }
-            hasChanges = true
         }
-        operation.recordZoneFetchCompletionBlock = { _, changeToken, _, _, error in
-            os_log("Record fetch batch operation complete", type: .info)
-            completion(changeToken, error, hasChanges)
+        operation.recordZoneFetchCompletionBlock = { _, changeToken, _, moreComing, error in
+            if let changeToken = changeToken {
+                changeTokenUpdate(changeToken)
+            }
+            if !moreComing {
+                os_log("Record fetch batch operation complete", type: .info)
+                completion(error)
+            }
         }
-        privateDB.add(operation)
+        return operation
     }
 
-    func upload(_ records: [CKRecord], dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) -> Operation {
-        upload(recordsToSave: records, recordsToDelete: [], dependentOperations: dependentOperations, completion: completion)
+    func upload(_ records: [CKRecord], dependentOperation: Operation? = nil, completion: @escaping (Error?) -> Void) -> Operation {
+        upload(recordsToSave: records, recordsToDelete: [], dependentOperation: dependentOperation, completion: completion)
     }
 
-    func remove(_ recordIDs: [CKRecord.ID], dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) {
-        upload(recordsToSave: [], recordsToDelete: recordIDs, dependentOperations: dependentOperations, completion: completion)
+    func remove(_ recordIDs: [CKRecord.ID], dependentOperation: Operation? = nil, completion: @escaping (Error?) -> Void) {
+        upload(recordsToSave: [], recordsToDelete: recordIDs, dependentOperation: dependentOperation, completion: completion)
     }
 
     @discardableResult
-    func upload(recordsToSave: [CKRecord]?, recordsToDelete: [CKRecord.ID]?, dependentOperations: [Operation]? = nil, completion: @escaping (Error?) -> Void) -> Operation {
+    func upload(recordsToSave: [CKRecord]?, recordsToDelete: [CKRecord.ID]?, dependentOperation: Operation? = nil, completion: @escaping (Error?) -> Void) -> Operation {
         let operation = CKModifyRecordsOperation(recordsToSave: recordsToSave, recordIDsToDelete: recordsToDelete)
         operation.qualityOfService = .userInitiated
-        if let dependencies = dependentOperations {
-            for dependentOperation in dependencies {
-                operation.addDependency(dependentOperation)
-            }
+        if let dependentOperation = dependentOperation {
+            operation.addDependency(dependentOperation)
         }
         operation.modifyRecordsCompletionBlock = { _, _, error in
             completion(error)
         }
-        CKContainer.default().privateCloudDatabase.add(operation)
+        privateCloudDatabase.add(operation)
         return operation
+    }
+
+    func uploadOperation(recordsToSave: [CKRecord]?, recordsToDelete: [CKRecord.ID]?, completion: @escaping (Error?) -> Void) -> CKDatabaseOperation {
+        let operation = CKModifyRecordsOperation(recordsToSave: recordsToSave, recordIDsToDelete: recordsToDelete)
+        operation.qualityOfService = .userInitiated
+        operation.modifyRecordsCompletionBlock = { _, _, error in
+            completion(error)
+        }
+        return operation
+    }
+
+    func scheduleOperation(_ operation: CKDatabaseOperation) {
+        privateCloudDatabase.add(operation)
     }
 }

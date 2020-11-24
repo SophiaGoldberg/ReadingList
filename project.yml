@@ -31,7 +31,7 @@ packages:
     minorVersion: 1.3.5
   PersistedPropertyWrapper:
     url: https://github.com/AndrewBennet/PersistedPropertyWrapper.git
-    minorVersion: 2.0.0
+    minorVersion: 2.1.0
   Regex:
     url: https://github.com/sharplet/Regex.git
     minorVersion: 2.1.1
