@@ -34,7 +34,7 @@ class InitialUpstreamLoader {
             var operation: Operation?
             for (index, batch) in books.chunked(by: self.batchSize).enumerated() {
                 os_log(.default, log: .syncUpstream, "Uploading %d inserts for batch %d", batch.count, index)
-                let ckRecords = batch.map { $0.recordForInsert(into: self.remote.bookZoneID) }
+                let ckRecords = batch.compactMap { $0.recordForInsert(into: self.remote.bookZoneID) }
                 let uploadOperation = self.remote.upload(recordsToSave: ckRecords, recordsToDelete: nil, dependentOperation: operation) { err in
                     os_log(.info, log: .syncUpstream, "Upload operation of batch %d (%d records) completed %s", index, batch.count, err == nil ? "" : "(errored)")
                 }

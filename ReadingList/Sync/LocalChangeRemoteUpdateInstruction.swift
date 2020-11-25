@@ -38,11 +38,11 @@ struct LocalChangeRemoteUpdateInstruction: CustomDebugStringConvertible, Equatab
         case .insert(let id):
             guard let managedObject = context.object(with: id) as? CKRecordRepresentable else { return }
             if managedObject.isDeleted {
-                os_log(.error, log: .syncUpstream, "Unexpected deleted object in an Insert operation")
                 return
             }
-            let ckRecordInsert = managedObject.recordForInsert(into: zoneId)
-            inserts[ckRecordInsert.recordID.recordName] = ckRecordInsert
+            if let ckRecordInsert = managedObject.recordForInsert(into: zoneId) {
+                inserts[ckRecordInsert.recordID.recordName] = ckRecordInsert
+            }
         case .update(let id, let keys):
             guard let managedObject = context.object(with: id) as? CKRecordRepresentable else { return }
             if managedObject.isDeleted {
@@ -51,9 +51,8 @@ struct LocalChangeRemoteUpdateInstruction: CustomDebugStringConvertible, Equatab
             }
             if let ckRecordUpdate = managedObject.recordForUpdate(changedCoreDataKeys: keys) {
                 updates[ckRecordUpdate.recordID.recordName] = ckRecordUpdate
-            } else {
+            } else if let ckRecordForInsert = managedObject.recordForInsert(into: zoneId) {
                 os_log(.info, log: .syncUpstream, "Update operation for an object which has not been inserted; inserting instead")
-                let ckRecordForInsert = managedObject.recordForInsert(into: zoneId)
                 inserts[ckRecordForInsert.recordID.recordName] = ckRecordForInsert
             }
         case .delete(let remoteId):

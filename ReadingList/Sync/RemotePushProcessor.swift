@@ -4,31 +4,35 @@ import CoreData
 import os.log
 
 class RemotePushProcessor {
-    init(remote: BookCloudKitRemote, syncContext: NSManagedObjectContext, delegate: RemotePushProcessorDelegate) {
+    init(remote: BookCloudKitRemote, syncContext: NSManagedObjectContext) {
         self.remote = remote
         self.syncContext = syncContext
-        self.delegate = delegate
     }
 
     let remote: BookCloudKitRemote
     let syncContext: NSManagedObjectContext
-    weak var delegate: RemotePushProcessorDelegate?
 
-    func pushOperation(_ remoteUpdate: LocalChangeRemoteUpdateInstruction) -> CKDatabaseOperation {
+    func push(_ remoteUpdate: LocalChangeRemoteUpdateInstruction, onComplete: @escaping () -> Void) {
+        let dispatchGroup = DispatchGroup()
         let operationId = UUID().uuidString
+        dispatchGroup.enter()
         let uploadOperation = remote.uploadOperation(recordsToSave: remoteUpdate.allCKRecords(), recordsToDelete: remoteUpdate.allDeletionIDs()) { [weak self] error in
             guard let self = self else { return }
             if let error = error {
-                self.handleBatchLevelError(error, remoteUpdate: remoteUpdate)
+                self.handleBatchLevelError(error, remoteUpdate: remoteUpdate, dispatchGroup: dispatchGroup)
             } else {
-                self.delegate?.onPushSuccess(operationName: operationId, remoteUpdate: remoteUpdate)
+                os_log("Successful push operation")
             }
+            dispatchGroup.leave()
         }
         uploadOperation.name = operationId
-        return uploadOperation
+        remote.scheduleOperation(uploadOperation)
+        dispatchGroup.notify(queue: .global(qos: .userInitiated)) {
+            onComplete()
+        }
     }
     
-    func handleBatchLevelError(_ error: Error, remoteUpdate: LocalChangeRemoteUpdateInstruction) {
+    func handleBatchLevelError(_ error: Error, remoteUpdate: LocalChangeRemoteUpdateInstruction, dispatchGroup: DispatchGroup) {
         if let ckError = error as? CKError {
             os_log("Handling CKError with code %s", type: .info, ckError.code.name)
 
@@ -49,12 +53,12 @@ class RemotePushProcessor {
                     return
                 }
                 for error in innerErrors.values {
-                    handleItemLevelError(error, for: remoteUpdate)
+                    handleItemLevelError(error, for: remoteUpdate, dispatchGroup: dispatchGroup)
                 }
             case .handleConcurrencyErrors:
                 // This should only happen if there is 1 upload instruction; otherwise, the batch should have failed
                 if remoteUpdate.operationCount == 1 {
-                    handleItemLevelError(ckError, for: remoteUpdate)
+                    handleItemLevelError(ckError, for: remoteUpdate, dispatchGroup: dispatchGroup)
                 } else {
                     os_log("Unexpected error code %s occurred when pushing %d upload instructions", type: .error, ckError.code.name, remoteUpdate.operationCount)
                     NotificationCenter.default.postCloudSyncDisableNotification()
@@ -69,7 +73,7 @@ class RemotePushProcessor {
         }
     }
 
-    func handleItemLevelError(_ error: Error, for item: LocalChangeRemoteUpdateInstruction) {
+    func handleItemLevelError(_ error: Error, for item: LocalChangeRemoteUpdateInstruction, dispatchGroup: DispatchGroup) {
         if let ckError = error as? CKError {
             os_log("Handling concurrency CKError with code %s", type: .info, ckError.code.name)
             switch ckError.code {
@@ -102,7 +106,11 @@ class RemotePushProcessor {
                         serverRecord[key] = clientRecord[key]
                     }
                 }
-                os_log("Update of record failed as the server record has changed", type: .error)
+                dispatchGroup.enter()
+                remote.upload(recordsToSave: [serverRecord], recordsToDelete: nil) { error in
+                    os_log("Conflict resolution submission received")
+                    dispatchGroup.leave()
+                }
             case .unknownItem:
                 // TODO: Find out whether this occurs when pushing to a deleted item?
                 os_log("Remote update of record failed - the item could not be found.")
@@ -114,8 +122,4 @@ class RemotePushProcessor {
             NotificationCenter.default.post(name: NSNotification.Name.DisableCloudSync, object: error)
         }
     }
-}
-
-protocol RemotePushProcessorDelegate: class {
-    func onPushSuccess(operationName: String, remoteUpdate: LocalChangeRemoteUpdateInstruction)
 }

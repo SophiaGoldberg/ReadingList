@@ -4,85 +4,132 @@ import CoreData
 import os.log
 import PersistedPropertyWrapper
 import ReadingList_Foundation
+import UIKit
 
-class RemoteInstructionSerialProcessor: RemotePushProcessorDelegate, RemotePullProcessorDelegate {
+@available(iOS 13.0, *)
+class RemoteInstructionSerialProcessor {
     let remote: BookCloudKitRemote
+    private let persistentStoreCoordinator: NSPersistentStoreCoordinator
     private let dispatchQueue = DispatchQueue(label: "remote-instruction-serial-processor", qos: .userInitiated)
     private let syncContext: NSManagedObjectContext
-    private var pendingPushWork = Queue<LocalChangeRemoteUpdateInstruction>()
-    private lazy var remotePushProcessor = RemotePushProcessor(remote: remote, syncContext: syncContext, delegate: self)
-    private lazy var remotePullProcessor = RemotePullProcessor(remote: remote, syncContext: syncContext, delegate: self)
+    private let historyFetcher: PersistentHistoryFetcher
+    private var notificationObserver: NSObjectProtocol?
 
-    init(remote: BookCloudKitRemote, syncContext: NSManagedObjectContext) {
+    private lazy var remotePushProcessor = RemotePushProcessor(remote: remote, syncContext: syncContext)
+    private lazy var remotePullProcessor = RemotePullProcessor(remote: remote, syncContext: syncContext)
+    let pushOperationDispatchGroup = DispatchGroup()
+
+    init(remote: BookCloudKitRemote, persistentStoreCoordinator: NSPersistentStoreCoordinator) {
         self.remote = remote
-        self.syncContext = syncContext
+        self.persistentStoreCoordinator = persistentStoreCoordinator
+
+        syncContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        syncContext.persistentStoreCoordinator = persistentStoreCoordinator
+        syncContext.name = "syncContext"
+        try! syncContext.setQueryGenerationFrom(.current)
+        // We handle conflicts by letting the persistent store changes trump the in-memory (i.e. downloaded) changes.
+        syncContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        
+        // If this is first startup, we don't have a date or a token to work with when detecting changes. Use the current date.
+        if Self.startedWatchingForChangesTimestamp == nil {
+            Self.startedWatchingForChangesTimestamp = Date()
+        }
+        
+        self.historyFetcher = PersistentHistoryFetcher(context: syncContext)
     }
-
-    /// A queue of remote operations which have been added to the CloudKit database. Each operation in the queue is dependent on the operation in front of it.
-    /// Operations are removed from the queue when complete. The operation at the front of the queue should therefore only depend on completed operations.
-    private var remoteOperationQueue = Queue<Operation>()
-
-    func requestPush(_ remoteUpdate: LocalChangeRemoteUpdateInstruction) {
+    
+    func start() {
+        // Watch for changes to the persistent store
+        notificationObserver = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: persistentStoreCoordinator, queue: nil, using: handleStoreChange(notification:))
+        
+        // In case there are any already-pending updates, perform a push
+        requestPush()
+        requestPull()
+    }
+    
+    func requestPush() {
         dispatchQueue.async {
-            self.pendingPushWork.enqueue(remoteUpdate)
-            let pushOperation = self.remotePushProcessor.pushOperation(remoteUpdate)
-            if let operationQueueFront = self.remoteOperationQueue.front {
-                pushOperation.addDependency(operationQueueFront)
+            self.pushOperationDispatchGroup.enter()
+            self.syncContext.perform {
+                if let remoteUpdate = self.getPendingRemoteInstruction() {
+                    self.remotePushProcessor.push(remoteUpdate) {
+                        self.lastCommittedLocalChangeToken = remoteUpdate.finalTransactionToken
+                        self.pushOperationDispatchGroup.leave()
+                    }
+                }
             }
-            self.remoteOperationQueue.enqueue(pushOperation)
-            self.remote.scheduleOperation(pushOperation)
         }
     }
+    
+    var pendingPull = false
 
-    func onPushSuccess(operationName: String, remoteUpdate: LocalChangeRemoteUpdateInstruction) {
-        self.dispatchQueue.sync {
-            guard let dequeuedOperation = self.remoteOperationQueue.dequeue() else {
-                os_log(.fault, "Error in Push operation management: no queued operations present during completion of an operation")
-                assertionFailure("Error in Push operation management: no queued operations present during completion of an operation")
-                return
-            }
-            assert(dequeuedOperation.name == operationName)
-
-            guard let dequeuedPushWork = self.pendingPushWork.dequeue() else {
-                os_log(.fault, "Error in Push operation management: no queued push work present during completion of an operation")
-                assertionFailure("Error in Push operation management: no queued push work present during completion of an operation")
-                return
-            }
-            assert(dequeuedPushWork == remoteUpdate)
-        }
-    }
-
-    func pendingUpdateRecordKeys(for id: String) -> Set<String>? {
-        dispatchQueue.sync {
-            if pendingPushWork.items.isEmpty { return nil }
-            var result = Set<String>()
-            for pendingWork in pendingPushWork.items {
-                guard let changedKeys = pendingWork.updates[id]?.changedKeys() else { continue }
-                result.formUnion(changedKeys)
-            }
-            return result
-        }
-    }
-
-    func requestPull() {
+    func requestPull(applicationCallback: ((UIBackgroundFetchResult) -> Void)? = nil) {
         dispatchQueue.async {
-            let pullOperation = self.remotePullProcessor.pullOperation()
-            if let operationQueueFront = self.remoteOperationQueue.front {
-                pullOperation.addDependency(operationQueueFront)
+            if self.pendingPull {
+                os_log("A pull was requested but one is already pending", log: .syncDownstream)
+                return
             }
-            self.remoteOperationQueue.enqueue(pullOperation)
-            self.remote.scheduleOperation(pullOperation)
+            self.pendingPull = true
+            self.pushOperationDispatchGroup.notify(queue: self.dispatchQueue) {
+                self.pendingPull = false
+                self.remotePullProcessor.pull() {
+                    applicationCallback?(.newData) // TODO We haven't actually checked whether there is new data...
+                }
+            }
+        }
+    }
+    
+    @Persisted(archivedDataKey: "sync_localChangeToken")
+    private var lastCommittedLocalChangeToken: NSPersistentHistoryToken?
+
+    @Persisted("sync_localChangeTimestamp")
+    static var startedWatchingForChangesTimestamp: Date?
+    
+    private var lastSeenLocalChangeToken: NSPersistentHistoryToken?
+
+    private func handleStoreChange(notification: Notification) {
+        os_log(.info, log: .sync, "Store change notification triggered local change processing")
+        dispatchQueue.async {
+            self.pushOperationDispatchGroup.notify(queue: self.dispatchQueue) {
+                self.syncContext.perform {
+                    os_log(.info, log: .sync, "Merging changes into syncContext")
+                    if let userInfo = notification.userInfo {
+                        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: userInfo, into: [self.syncContext])
+                    }
+                    self.requestPush()
+                }
+            }
         }
     }
 
-    func onPullSuccess(operationName: String) {
-        self.dispatchQueue.sync {
-            guard let dequeuedOperation = self.remoteOperationQueue.dequeue() else {
-                os_log(.fault, "Error in Pull operation management: no queued operations present during completion of an operation")
-                assertionFailure("Error in Pull operation management: no queued operations present during completion of an operation")
-                return
-            }
-            assert(dequeuedOperation.name == operationName)
+    private func getPendingRemoteInstruction() -> LocalChangeRemoteUpdateInstruction? {
+        guard let (localChanges, transactionToken) = self.getLocalChanges() else { return nil }
+
+        lastSeenLocalChangeToken = transactionToken
+        guard let unwrappedLocalChanges = localChanges else {
+            os_log(.info, log: .sync, "Local changes were not sync-relevant")
+            return nil
         }
+
+        os_log(.info, log: .sync, "Local changes converted to new pending remote instruction")
+        return unwrappedLocalChanges.remoteInstruction(context: syncContext, zoneId: remote.bookZoneID, finalTransactionToken: transactionToken)
+    }
+
+    private func getLocalChanges() -> ([LocalChange]?, NSPersistentHistoryToken)? {
+        let transactions: [NSPersistentHistoryTransaction]
+        if let historyToken = lastCommittedLocalChangeToken {
+            transactions = historyFetcher.fetch(fromToken: historyToken)
+            os_log(.debug, log: .syncLocalChangeProcessor, "%d transactions retrieved using token", transactions.count)
+        } else if let startedWatchingForChangesTimestamp = Self.startedWatchingForChangesTimestamp {
+            transactions = historyFetcher.fetch(fromDate: startedWatchingForChangesTimestamp)
+            os_log(.debug, log: .syncLocalChangeProcessor, "%d transactions retrieved using timespan", transactions.count)
+        } else {
+            preconditionFailure("Unexpected nil startedWatchingForChangesTimestamp value")
+        }
+
+        guard let lastTransaction = transactions.last else { return nil }
+        os_log(.debug, log: .syncLocalChangeProcessor, "Processing %d transactions", transactions.count)
+
+        return (transactions.compactMap { $0.localChangeRepresentations() }.flatMap { $0 }, lastTransaction.token)
     }
 }
