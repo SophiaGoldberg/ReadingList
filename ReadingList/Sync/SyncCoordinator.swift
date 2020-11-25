@@ -10,21 +10,29 @@ import PersistedPropertyWrapper
  Coordinates synchronisation of a local CoreData store with a CloudKit remote store.
 */
 @available(iOS 13.0, *)
-class SyncCoordinator {
-    private let persistentStoreCoordinator: NSPersistentStoreCoordinator
+class SyncCoordinator: BackgroundChangeObserverDelegate {
+    private let viewContext: NSManagedObjectContext
+    private let syncContext: NSManagedObjectContext
 
-    private lazy var remoteUpdateInstructionSerialProcessor = RemoteInstructionSerialProcessor(remote: remote, persistentStoreCoordinator: persistentStoreCoordinator)
+    private lazy var backgroundChangeObserver =
+        BackgroundChangeObserver(viewContext: viewContext, syncContext: syncContext, zoneID: remote.bookZoneID, delegate: self)
+    private lazy var remoteUpdateInstructionSerialProcessor = RemoteInstructionSerialProcessor(remote: remote, syncContext: syncContext)
 
     let reachability = try! Reachability()
     let remote = BookCloudKitRemote()
 
     private var notificationObservers = [NSObjectProtocol]()
     private(set) var isStarted = false
-    
-    private let dispatchQueue = DispatchQueue(label: "sync-coordinator", qos: .userInitiated)
 
     init(container: NSPersistentContainer) {
-        self.persistentStoreCoordinator = container.persistentStoreCoordinator
+        viewContext = container.viewContext
+        viewContext.name = "viewContext"
+
+        syncContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        syncContext.persistentStoreCoordinator = container.persistentStoreCoordinator
+        syncContext.name = "syncContext"
+        try! syncContext.setQueryGenerationFrom(.current)
+        syncContext.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump // TODO: Add a custom merge policy?
     }
 
     func monitorNetworkReachability() {
@@ -54,11 +62,11 @@ class SyncCoordinator {
             startNotificationObserving()
             //downstreamChangeProcessor.processRemoteChanges()
             //processPendingRemoteChanges()
-            remoteUpdateInstructionSerialProcessor.start()
-            //backgroundChangeObserver.start()
+            remoteUpdateInstructionSerialProcessor.requestPull()
+            backgroundChangeObserver.start()
         }
 
-        dispatchQueue.async {
+        syncContext.perform {
             guard !self.isStarted else {
                 os_log("SyncCoordinator instructed to start but it is already started", log: .sync, type: .info)
                 return
@@ -69,7 +77,7 @@ class SyncCoordinator {
 
             if !self.remote.isInitialised {
                 self.remote.initialise { error in
-                    self.dispatchQueue.async {
+                    self.syncContext.perform {
                         if let error = error {
                             os_log("Error initialising CloudKit remote connectivity: %{public}s", log: .sync, type: .error, error.localizedDescription)
                             self.isStarted = false
@@ -88,7 +96,7 @@ class SyncCoordinator {
      Stops the monitoring of CoreData changes.
     */
     func stop() {
-        dispatchQueue.async {
+        syncContext.perform {
             guard self.isStarted else {
                 os_log("SyncCoordinator instructed to stop but it is already stopped", log: .sync, type: .info)
                 return
@@ -98,7 +106,7 @@ class SyncCoordinator {
             self.isStarted = false
             self.notificationObservers.forEach { NotificationCenter.default.removeObserver($0) }
             self.notificationObservers.removeAll()
-            //self.backgroundChangeObserver.stop()
+            self.backgroundChangeObserver.stop()
         }
     }
 
@@ -107,6 +115,10 @@ class SyncCoordinator {
     */
     func remoteNotificationReceived(applicationCallback: ((UIBackgroundFetchResult) -> Void)? = nil) {
         remoteUpdateInstructionSerialProcessor.requestPull()
+    }
+
+    func requestPush(_ update: LocalChangeRemoteUpdateInstruction) {
+        remoteUpdateInstructionSerialProcessor.requestPush(update)
     }
 
     /**
@@ -130,7 +142,7 @@ class SyncCoordinator {
             os_log("Pause sync notification received: stopping SyncCoordinator for %d seconds", log: .sync, retryAfterSeconds)
 
             self.stop()
-            self.dispatchQueue.asyncAfter(deadline: .now() + retryAfterSeconds) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + retryAfterSeconds) {
                 self.start()
             }
         }

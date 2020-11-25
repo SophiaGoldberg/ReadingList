@@ -27,9 +27,6 @@ class PersistentStoreManager {
         description.shouldInferMappingModelAutomatically = false
         description.shouldMigrateStoreAutomatically = false
         description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-        if #available(iOS 13.0, *) {
-            description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-        }
         container.persistentStoreDescriptions = [description]
 
         // Migrate the store to the latest version if necessary and then initialise

@@ -6,14 +6,14 @@ import ReadingList_Foundation
 extension Book: CKRecordRepresentable {
     static let ckRecordType = "Book"
 
-    func newRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID? {
+    func newRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID {
         let recordName: String
         if let googleBooksId = googleBooksId {
             recordName = "gbid:\(googleBooksId)"
         } else if let manualBookId = manualBookId {
             recordName = "mid:\(manualBookId)"
         } else {
-            return nil
+            fatalError("No google book or manual book ID")
         }
         return CKRecord.ID(recordName: recordName, zoneID: zoneID)
     }
@@ -112,9 +112,8 @@ extension Book: CKRecordRepresentable {
     /**
      Returns a CKRecord with every CKRecordKey set to the CKValue corresponding to the value in this book.
      */
-    func recordForInsert(into zone: CKRecordZone.ID) -> CKRecord? {
-        guard let newId = newRecordID(in: zone) else { return nil }
-        let ckRecord = CKRecord(recordType: Book.ckRecordType, recordID: newId)
+    func recordForInsert(into zone: CKRecordZone.ID) -> CKRecord {
+        let ckRecord = CKRecord(recordType: Book.ckRecordType, recordID: newRecordID(in: zone))
         for key in Book.CKRecordKey.allCases {
             if let valueForKey = getValue(for: key) {
                 ckRecord[key] = valueForKey

@@ -5,20 +5,20 @@ import os.log
 import PersistedPropertyWrapper
 
 class RemotePullProcessor {
-    init(remote: BookCloudKitRemote, syncContext: NSManagedObjectContext) {
+    init(remote: BookCloudKitRemote, syncContext: NSManagedObjectContext, delegate: RemotePullProcessorDelegate) {
         self.remote = remote
         self.syncContext = syncContext
+        self.delegate = delegate
     }
 
     let remote: BookCloudKitRemote
     let syncContext: NSManagedObjectContext
+    weak var delegate: RemotePullProcessorDelegate?
 
     @Persisted(archivedDataKey: "sync-server-change-token")
     var serverChangeToken: CKServerChangeToken?
 
-    func pull(onComplete: @escaping () -> Void) {
-        let dispatchGroup = DispatchGroup()
-        dispatchGroup.enter()
+    func pullOperation() -> CKDatabaseOperation {
         let operationId = UUID().uuidString
         let fetchOperation = remote.fetchRecordChangesOperation(
             changeToken: serverChangeToken,
@@ -33,14 +33,11 @@ class RemotePullProcessor {
                 self.syncContext.performAndWait {
                     self.syncContext.saveAndLogIfErrored()
                 }
+                self.delegate?.onPullSuccess(operationName: operationId)
             }
-            dispatchGroup.leave()
         }
         fetchOperation.name = operationId
-        remote.scheduleOperation(fetchOperation)
-        dispatchGroup.notify(queue: .global(qos: .userInitiated)) {
-            onComplete()
-        }
+        return fetchOperation
     }
 
     private func onChangeTokenUpdate(_ newToken: CKServerChangeToken) {
@@ -69,7 +66,7 @@ class RemotePullProcessor {
     }
 
     func processRemoteDeletion(_ id: CKRecord.ID) {
-        syncContext.perform {
+        syncContext.performAndWait {
             if let localBook = self.locallyPresentBook(withId: id) {
                 os_log("Deleting found local book", log: .syncDownstream, type: .info)
                 localBook.delete()
@@ -78,7 +75,7 @@ class RemotePullProcessor {
     }
 
     func processRemoteChange(_ ckRecord: CKRecord) {
-        syncContext.perform {
+        syncContext.performAndWait {
             self.downloadBook(ckRecord)
         }
     }
@@ -87,8 +84,8 @@ class RemotePullProcessor {
         if remoteBook.recordType == Book.ckRecordType {
             if let localBook = self.lookupLocalBook(for: remoteBook) {
                 os_log("Updating existing local book with remote record %{public}s", log: .syncDownstream, type: .info, remoteBook.recordID.recordName)
-                //let keysPendingUpdate = delegate?.pendingUpdateRecordKeys(for: remoteBook.recordID.recordName)?.compactMap(Book.CKRecordKey.init(rawValue:))
-                localBook.update(from: remoteBook, excluding: nil)
+                let keysPendingUpdate = delegate?.pendingUpdateRecordKeys(for: remoteBook.recordID.recordName)?.compactMap(Book.CKRecordKey.init(rawValue:))
+                localBook.update(from: remoteBook, excluding: keysPendingUpdate)
             } else {
                 os_log("Creating new book from remote record %{public}s", log: .syncDownstream, type: .info, remoteBook.recordID.recordName)
                 let book = Book(context: self.syncContext)
@@ -123,4 +120,9 @@ class RemotePullProcessor {
         fetchRequest.predicate = Book.withRemoteIdentifier(id.recordName)
         return (try! syncContext.fetch(fetchRequest)).first
     }
+}
+
+protocol RemotePullProcessorDelegate: class {
+    func onPullSuccess(operationName: String)
+    func pendingUpdateRecordKeys(for id: String) -> Set<String>?
 }
