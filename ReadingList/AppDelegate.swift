@@ -39,7 +39,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
             // Initialise the Sync Coordinator which will maintain iCloud synchronisation
             if #available(iOS 13.0, *) {
-                self.syncCoordinator = SyncCoordinator(container: PersistentStoreManager.container)
+                self.syncCoordinator = SyncCoordinator(persistentStoreCoordinator: PersistentStoreManager.container.persistentStoreCoordinator)
                 if GeneralSettings.iCloudSyncEnabled {
                     (self.syncCoordinator as! SyncCoordinator).start()
                 }
@@ -74,8 +74,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         guard #available(iOS 13.0, *) else { return }
-        if GeneralSettings.iCloudSyncEnabled, let syncCoordinator = (self.syncCoordinator as? SyncCoordinator), syncCoordinator.remote.isInitialised {
-            syncCoordinator.remoteNotificationReceived(applicationCallback: completionHandler)
+        if GeneralSettings.iCloudSyncEnabled, let syncCoordinator = (self.syncCoordinator as? SyncCoordinator) {
+            syncCoordinator.respondToRemoteChangeNotification()
         }
     }
 }

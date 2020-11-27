@@ -2,7 +2,7 @@ import Foundation
 import CloudKit
 import CoreData
 import os.log
-
+/*
 class RemotePushProcessor {
     init(remote: BookCloudKitRemote, syncContext: NSManagedObjectContext, delegate: RemotePushProcessorDelegate) {
         self.remote = remote
@@ -14,7 +14,7 @@ class RemotePushProcessor {
     let syncContext: NSManagedObjectContext
     weak var delegate: RemotePushProcessorDelegate?
 
-    func pushOperation(_ remoteUpdate: LocalChangeRemoteUpdateInstruction) -> CKDatabaseOperation {
+    func pushOperation(_ remoteUpdate: ManagedObjectChangeSet) -> CKDatabaseOperation {
         let operationId = UUID().uuidString
         let uploadOperation = remote.uploadOperation(recordsToSave: remoteUpdate.allCKRecords(), recordsToDelete: remoteUpdate.allDeletionIDs()) { [weak self] error in
             guard let self = self else { return }
@@ -28,7 +28,7 @@ class RemotePushProcessor {
         return uploadOperation
     }
     
-    func handleBatchLevelError(_ error: Error, remoteUpdate: LocalChangeRemoteUpdateInstruction) {
+    func handleBatchLevelError(_ error: Error, remoteUpdate: ManagedObjectChangeSet) {
         if let ckError = error as? CKError {
             os_log("Handling CKError with code %s", type: .info, ckError.code.name)
 
@@ -69,7 +69,7 @@ class RemotePushProcessor {
         }
     }
 
-    func handleItemLevelError(_ error: Error, for item: LocalChangeRemoteUpdateInstruction) {
+    func handleItemLevelError(_ error: Error, for item: ManagedObjectChangeSet) {
         if let ckError = error as? CKError {
             os_log("Handling concurrency CKError with code %s", type: .info, ckError.code.name)
             switch ckError.code {
@@ -117,5 +117,6 @@ class RemotePushProcessor {
 }
 
 protocol RemotePushProcessorDelegate: class {
-    func onPushSuccess(operationName: String, remoteUpdate: LocalChangeRemoteUpdateInstruction)
+    func onPushSuccess(operationName: String, remoteUpdate: ManagedObjectChangeSet)
 }
+*/

@@ -5,6 +5,7 @@ import os.log
 @available(iOS 13.0, *)
 struct PersistentHistoryFetcher {
     let context: NSManagedObjectContext
+    let excludeHistoryFromContextWithName: String
 
     /// Fetches transactions created by other contexts
     func fetch(fromToken token: NSPersistentHistoryToken) -> [NSPersistentHistoryTransaction] {
@@ -48,11 +49,13 @@ struct PersistentHistoryFetcher {
             os_log(.error, "NSPersistentHistoryTransaction.fetchRequest was nil")
             return nil
         }
+        
+        // Only look at transactions not from the excluded context
+        fetchRequest.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+            NSPredicate(format: "%K == NULL", #keyPath(NSPersistentHistoryTransaction.contextName)),
+            NSPredicate(format: "%K != %@", #keyPath(NSPersistentHistoryTransaction.contextName), excludeHistoryFromContextWithName)
+        ])
 
-        if let contextName = context.name {
-            // Only look at transactions from our current context
-            fetchRequest.predicate = NSPredicate(format: "%K != %@", #keyPath(NSPersistentHistoryTransaction.contextName), contextName)
-        }
         return fetchRequest
     }
 

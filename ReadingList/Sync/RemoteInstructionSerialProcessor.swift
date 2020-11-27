@@ -5,11 +5,12 @@ import os.log
 import PersistedPropertyWrapper
 import ReadingList_Foundation
 
+/*
 class RemoteInstructionSerialProcessor: RemotePushProcessorDelegate, RemotePullProcessorDelegate {
     let remote: BookCloudKitRemote
     private let dispatchQueue = DispatchQueue(label: "remote-instruction-serial-processor", qos: .userInitiated)
     private let syncContext: NSManagedObjectContext
-    private var pendingPushWork = Queue<LocalChangeRemoteUpdateInstruction>()
+    private var pendingPushWork = Queue<ManagedObjectChangeSet>()
     private lazy var remotePushProcessor = RemotePushProcessor(remote: remote, syncContext: syncContext, delegate: self)
     private lazy var remotePullProcessor = RemotePullProcessor(remote: remote, syncContext: syncContext, delegate: self)
 
@@ -22,7 +23,7 @@ class RemoteInstructionSerialProcessor: RemotePushProcessorDelegate, RemotePullP
     /// Operations are removed from the queue when complete. The operation at the front of the queue should therefore only depend on completed operations.
     private var remoteOperationQueue = Queue<Operation>()
 
-    func requestPush(_ remoteUpdate: LocalChangeRemoteUpdateInstruction) {
+    func requestPush(_ remoteUpdate: ManagedObjectChangeSet) {
         dispatchQueue.async {
             self.pendingPushWork.enqueue(remoteUpdate)
             let pushOperation = self.remotePushProcessor.pushOperation(remoteUpdate)
@@ -34,7 +35,7 @@ class RemoteInstructionSerialProcessor: RemotePushProcessorDelegate, RemotePullP
         }
     }
 
-    func onPushSuccess(operationName: String, remoteUpdate: LocalChangeRemoteUpdateInstruction) {
+    func onPushSuccess(operationName: String, remoteUpdate: ManagedObjectChangeSet) {
         self.dispatchQueue.sync {
             guard let dequeuedOperation = self.remoteOperationQueue.dequeue() else {
                 os_log(.fault, "Error in Push operation management: no queued operations present during completion of an operation")
@@ -86,3 +87,4 @@ class RemoteInstructionSerialProcessor: RemotePushProcessorDelegate, RemotePullP
         }
     }
 }
+*/

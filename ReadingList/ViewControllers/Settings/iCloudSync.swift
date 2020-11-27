@@ -15,16 +15,16 @@ class CloudSync: UITableViewController {
         super.viewDidLoad()
         monitorThemeSetting()
         enabledSwitch.isOn = GeneralSettings.iCloudSyncEnabled
-        if !GeneralSettings.iCloudSyncEnabled && syncCoordinator?.reachability.connection == .unavailable {
-            enabledSwitch.isEnabled = false
+        if !GeneralSettings.iCloudSyncEnabled/* && syncCoordinator?.reachability.connection == .unavailable */{
+            //enabledSwitch.isEnabled = false
         }
-        NotificationCenter.default.addObserver(self, selector: #selector(networkConnectivityDidChange), name: .reachabilityChanged, object: nil)
+        //NotificationCenter.default.addObserver(self, selector: #selector(networkConnectivityDidChange), name: .reachabilityChanged, object: nil)
     }
 
-    @objc private func networkConnectivityDidChange() {
-        guard !GeneralSettings.iCloudSyncEnabled else { return }
-        enabledSwitch.isEnabled = syncCoordinator?.reachability.connection != .unavailable
-    }
+//    @objc private func networkConnectivityDidChange() {
+//        guard !GeneralSettings.iCloudSyncEnabled else { return }
+//        enabledSwitch.isEnabled = syncCoordinator?.reachability.connection != .unavailable
+//    }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
@@ -52,20 +52,23 @@ class CloudSync: UITableViewController {
 
         SVProgressHUD.show(withStatus: "Enabling iCloud")
         DispatchQueue.main.async {
-            syncCoordinator.remote.initialise { error in
+            GeneralSettings.iCloudSyncEnabled = true
+            syncCoordinator.start()
+//            syncCoordinator.remote.initialise { error in
                 DispatchQueue.main.async {
                     SVProgressHUD.dismiss()
-                    if let error = error {
-                        self.handleRemoteInitialiseError(error: error)
-                        self.enabledSwitch.setOn(false, animated: true)
-                    } else if self.nonRemoteBooksExistLocally() {
-                        self.requestSyncMergeAction()
-                    } else {
-                        GeneralSettings.iCloudSyncEnabled = true
-                        syncCoordinator.start()
-                    }
                 }
-            }
+//                    if let error = error {
+//                        self.handleRemoteInitialiseError(error: error)
+//                        self.enabledSwitch.setOn(false, animated: true)
+//                    } else if self.nonRemoteBooksExistLocally() {
+//                        self.requestSyncMergeAction()
+//                    } else {
+//                        GeneralSettings.iCloudSyncEnabled = true
+//                        syncCoordinator.start()
+//                    }
+//                }
+//            }
         }
     }
 
@@ -125,7 +128,7 @@ class CloudSync: UITableViewController {
             """, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Disable", style: .destructive) { _ in
             // TODO: Consider whether change tokens should be discarded, remote identifiers should be deleted, etc
-            self.syncCoordinator!.stop()
+            //self.syncCoordinator!.stop()
         })
         alert.addAction(UIAlertAction(title: "Keep Enabled", style: .cancel) { [unowned self] _ in
             self.enabledSwitch.isOn = true

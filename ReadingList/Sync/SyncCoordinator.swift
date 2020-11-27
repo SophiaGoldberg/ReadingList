@@ -6,6 +6,7 @@ import Reachability
 import os.log
 import PersistedPropertyWrapper
 
+/*
 /**
  Coordinates synchronisation of a local CoreData store with a CloudKit remote store.
 */
@@ -117,7 +118,7 @@ class SyncCoordinator: BackgroundChangeObserverDelegate {
         remoteUpdateInstructionSerialProcessor.requestPull()
     }
 
-    func requestPush(_ update: LocalChangeRemoteUpdateInstruction) {
+    func requestPush(_ update: ManagedObjectChangeSet) {
         remoteUpdateInstructionSerialProcessor.requestPush(update)
     }
 
@@ -149,3 +150,4 @@ class SyncCoordinator: BackgroundChangeObserverDelegate {
         notificationObservers.append(pauseObserver)
     }
 }
+*/

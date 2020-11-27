@@ -25,7 +25,7 @@ extension Book: CKRecordRepresentable {
         if recordID.recordName.starts(with: "mid:") {
             return NSPredicate(format: "%K == %@", #keyPath(Book.manualBookId), String(recordID.recordName.dropFirst(4)))
         }
-        os_log("Unexpected format of remote record ID: %{public}s", type: .error, recordID.recordName)
+        os_log("Unexpected format of remote record ID: %{public}s", log: .syncCoordinator, type: .error, recordID.recordName)
         return NSPredicate(boolean: false)
     }
 
@@ -66,7 +66,10 @@ extension Book: CKRecordRepresentable {
 
     func setValue(_ value: CKRecordValue?, for ckRecordKey: CKRecordKey) { //swiftlint:disable:this cyclomatic_complexity
         switch ckRecordKey {
-        case .title: title = value as! String
+        case .title:
+            if let newTitle = value as? String {
+                title = newTitle
+            }
         case .subtitle: subtitle = value as? String
         case .googleBooksId: googleBooksId = value as? String
         case .isbn13: isbn13 = value as? Int64
@@ -80,7 +83,10 @@ extension Book: CKRecordRepresentable {
                 language = LanguageIso639_1(rawValue: languageString)
             }
         case .rating: rating = value as? Int16
-        case .sort: sort = value as! Int32
+        case .sort:
+            if let newSort = value as? Int32 {
+                sort = newSort
+            }
         case .readDates:
             if let datesArray = value as? [Date] {
                 if datesArray.count == 1 {
@@ -93,9 +99,13 @@ extension Book: CKRecordRepresentable {
             }
         case .authors:
             do {
-                authors = try NSKeyedUnarchiver.unarchivedObject(ofClasses: [Author.self, NSArray.self], from: value as! Data) as! [Author]
+                if let data = value as? Data,
+                   let unarchivedData = try NSKeyedUnarchiver.unarchivedObject(ofClasses: [Author.self, NSArray.self], from: data),
+                   let authorsFromData = unarchivedData as? [Author] {
+                    authors = authorsFromData
+                }
             } catch {
-                os_log(.error, "Error decoding author data")
+                os_log(.error, log: .syncCoordinator, "Error decoding author data: %{public}s", error.localizedDescription)
                 authors = []
             }
         case .coverImage:
@@ -123,11 +133,7 @@ extension Book: CKRecordRepresentable {
     }
 
     func recordForUpdate(changedCoreDataKeys: [String]) -> CKRecord? {
-        guard let ckRecord = getSystemFieldsRecord() else {
-            return nil
-            // TODO: Ought we error here?
-            //fatalError("No stored CKRecord to use for differential update")
-        }
+        guard let ckRecord = getSystemFieldsRecord() else { return nil }
         let changeCkRecordKeys = changedCoreDataKeys.compactMap(CKRecordKey.from(coreDataKey:)).distinct()
         if changeCkRecordKeys.isEmpty { return nil }
         for changedKey in changeCkRecordKeys {
@@ -142,12 +148,12 @@ extension Book: CKRecordRepresentable {
     */
     func update(from ckRecord: CKRecord, excluding excludedKeys: [CKRecordKey]?) {
         if let existingCKRecordSystemFields = getSystemFieldsRecord(), existingCKRecordSystemFields.recordChangeTag == ckRecord.recordChangeTag {
-            os_log("CKRecord %{public}s has same change tag as local book; skipping update", type: .debug, ckRecord.recordID.recordName)
+            os_log("CKRecord %{public}s has same change tag as local book; skipping update", log: .syncCoordinator, type: .debug, ckRecord.recordID.recordName)
             return
         }
 
         if remoteIdentifier != ckRecord.recordID.recordName {
-            os_log("Updating remoteIdentifier from %{public}s to %{public}s", type: .debug, remoteIdentifier ?? "nil", ckRecord.recordID.recordName)
+            os_log("Updating remoteIdentifier from %{public}s to %{public}s", log: .syncCoordinator, type: .debug, remoteIdentifier ?? "nil", ckRecord.recordID.recordName)
             remoteIdentifier = ckRecord.recordID.recordName
         }
 
@@ -156,7 +162,7 @@ extension Book: CKRecordRepresentable {
         // This book may have local changes which we don't want to overwrite with the values on the server.
         for key in CKRecordKey.allCases {
             if let excludedKeys = excludedKeys, excludedKeys.contains(key) {
-                os_log(.info, log: .syncDownstream, "CKRecordKey '%{public}s' not used to update local store due to pending local change", key.rawValue)
+                os_log(.info, log: .syncCoordinator, "CKRecordKey '%{public}s' not used to update local store due to pending local change", key.rawValue)
                 continue
             }
             setValue(ckRecord[key], for: key)

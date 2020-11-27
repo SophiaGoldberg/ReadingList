@@ -2,6 +2,7 @@ import Foundation
 import CoreData
 import os.log
 import PersistedPropertyWrapper
+/*
 
 extension OSLog {
     static let syncLocalChangeProcessor = OSLog(subsystem: Bundle.main.bundleIdentifier!, category: "sync_upstream")
@@ -68,7 +69,7 @@ class BackgroundChangeObserver {
         }
     }
 
-    private func getPendingRemoteInstruction() -> LocalChangeRemoteUpdateInstruction? {
+    private func getPendingRemoteInstruction() -> ManagedObjectChangeSet? {
         guard let (localChanges, transactionToken) = self.getLocalChanges() else { return nil }
 
         lastSeenLocalChangeToken = transactionToken
@@ -81,7 +82,7 @@ class BackgroundChangeObserver {
         return unwrappedLocalChanges.remoteInstruction(context: syncContext, zoneId: zoneID, finalTransactionToken: transactionToken)
     }
 
-    private func getLocalChanges() -> ([LocalChange]?, NSPersistentHistoryToken)? {
+    private func getLocalChanges() -> ([ManagedObjectChange]?, NSPersistentHistoryToken)? {
         let transactions: [NSPersistentHistoryTransaction]
         if let historyToken = lastCommittedLocalChangeToken {
             transactions = historyFetcher.fetch(fromToken: historyToken)
@@ -96,10 +97,11 @@ class BackgroundChangeObserver {
         guard let lastTransaction = transactions.last else { return nil }
         os_log(.debug, log: .syncLocalChangeProcessor, "Processing %d transactions", transactions.count)
 
-        return (transactions.compactMap { $0.localChangeRepresentations() }.flatMap { $0 }, lastTransaction.token)
+        return (transactions.compactMap { $0.changeSet() }.flatMap { $0 }, lastTransaction.token)
     }
 }
 
 protocol BackgroundChangeObserverDelegate: class {
-    func requestPush(_ update: LocalChangeRemoteUpdateInstruction)
+    func requestPush(_ update: ManagedObjectChangeSet)
 }
+*/
