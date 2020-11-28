@@ -77,9 +77,11 @@
         </uniquenessConstraints>
     </entity>
     <entity name="List" representedClassName="List" syncable="YES">
+        <attribute name="ckRecordEncodedSystemFields" optional="YES" attributeType="Binary"/>
         <attribute name="custom" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="name" attributeType="String"/>
         <attribute name="order" attributeType="Integer 16" defaultValueString="6" usesScalarValueType="YES"/>
+        <attribute name="remoteIdentifier" optional="YES" attributeType="String" preserveAfterDeletion="YES"/>
         <attribute name="sort" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="items" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ListItem" inverseName="list" inverseEntity="ListItem"/>
         <fetchIndex name="sort">
@@ -111,7 +113,7 @@
     </entity>
     <elements>
         <element name="Book" positionX="-63" positionY="-18" width="128" height="463"/>
-        <element name="List" positionX="-54" positionY="117" width="128" height="118"/>
+        <element name="List" positionX="-54" positionY="117" width="128" height="134"/>
         <element name="ListItem" positionX="-45" positionY="144" width="128" height="88"/>
         <element name="Subject" positionX="-63" positionY="90" width="128" height="75"/>
     </elements>

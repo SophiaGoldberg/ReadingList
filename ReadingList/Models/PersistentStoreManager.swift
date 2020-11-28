@@ -34,9 +34,10 @@ class PersistentStoreManager {
 
         // Migrate the store to the latest version if necessary and then initialise
         try container.migrateAndLoad(BooksModelVersion.self) {
+            self.container.viewContext.name = "ViewContext"
             self.container.viewContext.automaticallyMergesChangesFromParent = true
             self.container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
-            self.container.viewContext.name = "ViewContext"
+            try! self.container.viewContext.setQueryGenerationFrom(.current)
             completion()
         }
     }

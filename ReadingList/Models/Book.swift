@@ -46,7 +46,6 @@ class Book: NSManagedObject {
     }
 
     @NSManaged var remoteIdentifier: String?
-    @NSManaged private var ckRecordEncodedSystemFields: Data?
 
     func setToRead() {
         readState = .toRead

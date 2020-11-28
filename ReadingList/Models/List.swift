@@ -8,6 +8,7 @@ class List: NSManagedObject {
     @NSManaged var name: String
     @NSManaged var order: BookSort
     @NSManaged var sort: Int32
+    @NSManaged var remoteIdentifier: String?
     @NSManaged private(set) var custom: Bool
 
     /** The item which hold a book-index pair for each book in this list */

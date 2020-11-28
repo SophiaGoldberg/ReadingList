@@ -9,7 +9,7 @@ struct ManagedObjectChangeSet: CustomDebugStringConvertible, Equatable {
     var deletions = Set<RemoteIdentifier>()
     var updates = [NSManagedObjectID: [String]]()
     var inserts = Set<NSManagedObjectID>()
-    
+
     var isEmpty: Bool { operationCount == 0 }
     var operationCount: Int {
         return deletions.count + updates.count + inserts.count
@@ -56,7 +56,7 @@ extension NSPersistentHistoryChange {
         case .insert:
             return .insert(id: changedObjectID)
         case .delete:
-            guard let remoteId = tombstone?[#keyPath(Book.remoteIdentifier)] as? String else { return nil }
+            guard let remoteId = tombstone?[SyncConstants.remoteIdentifierKeyPath] as? String else { return nil }
             return .delete(remoteId: remoteId)
         case .update:
             guard let updatedProperties = updatedProperties?.map(\.name) else { return nil }

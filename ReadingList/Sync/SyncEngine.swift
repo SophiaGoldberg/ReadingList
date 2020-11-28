@@ -25,9 +25,6 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
 
     private var buffer = [ManagedObjectChangeSet]()
 
-    /// Called when models are deleted remotely.
-    var didDeleteModels: ([String]) -> Void = { _ in }
-
     private let workQueue = DispatchQueue(label: "SyncEngine.Work", qos: .userInitiated)
     private let cloudQueue = DispatchQueue(label: "SyncEngine.Cloud", qos: .userInitiated)
     
@@ -281,12 +278,15 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
             self.syncContext.mergeChanges(fromContextDidSave: notification)
             
             let remoteUpdates = getLocalChanges()
-            if !remoteUpdates.isEmpty {
-                workQueue.async {
-                    os_log(.info, log: .syncCoordinator, "%d change-sets added to buffer", remoteUpdates.count)
-                    self.buffer.append(contentsOf: remoteUpdates)
-                    self.uploadLocalDataNotUploadedYet()
-                }
+            guard !remoteUpdates.isEmpty else {
+                os_log(.info, log: .syncCoordinator, "No remote updates necessary after Local changes - exiting")
+                return
+            }
+
+            workQueue.async {
+                os_log(.info, log: .syncCoordinator, "%d change-sets added to buffer", remoteUpdates.count)
+                self.buffer.append(contentsOf: remoteUpdates)
+                self.uploadLocalDataNotUploadedYet()
             }
         }
     }
@@ -303,9 +303,16 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
             preconditionFailure("Unexpected nil startedWatchingForChangesTimestamp value")
         }
 
-        return transactions
+        let changeSets = transactions
             .filter { $0.contextName != syncContext.name }
             .compactMap { $0.changeSet() }
+        
+        if buffer.isEmpty && changeSets.isEmpty, let lastTransaction = transactions.last {
+            os_log("Empty change-set but there were transactions - buffer is empty so updating stored change token", log: .syncCoordinator, type: .default)
+            self.lastCommittedLocalChangeToken = lastTransaction.token
+        }
+        
+        return changeSets
     }
 
     private func uploadLocalDataNotUploadedYet() {
@@ -340,7 +347,7 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
             let deletionIDs = changeSet.deletions.map { CKRecord.ID(recordName: $0, zoneID: zoneID) }
             uploadChanges(records: records, deletions: deletionIDs) {
                 guard let bufferIndex = self.buffer.firstIndex(of: changeSet) else {
-                    os_log("Could not find index of uploaded local data", log: .syncCoordinator, type: .fault)
+                    os_log("Could not find index of uploaded local data %{public}s", log: .syncCoordinator, type: .fault, Thread.callStackSymbols.joined(separator: "\n"))
                     return
                 }
                 self.buffer.remove(at: bufferIndex)
@@ -431,22 +438,7 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
         guard !records.isEmpty else { return }
         syncContext.performAndWait {
             for record in records {
-                let fetchRequest = NSManagedObject.fetchRequest(Book.self)
-                fetchRequest.predicate = Book.candidateBookForRemoteIdentifier(record.recordID)
-                fetchRequest.fetchLimit = 1
-                let fetchResult = try! self.syncContext.fetch(fetchRequest)
-                guard let localBook = fetchResult.first, !localBook.isDeleted else {
-                    os_log("Local managed object does not exist or was deleted when attempting to update local state following an upload", log: .syncCoordinator, type: .default)
-                    continue
-                }
-                if updateAllMetadata {
-                    let keysPendingUpdate = buffer.compactMap { $0.updates[localBook.objectID] }.joined().compactMap { Book.CKRecordKey(rawValue: $0) }
-                    localBook.update(from: record, excluding: keysPendingUpdate)
-                    os_log("Updated metadata for CKRecord %{public}s on object %{public}s", log: .syncCoordinator, type: .info, record.recordID.recordName, localBook.objectID.uriRepresentation().relativeString)
-                } else {
-                    localBook.setSystemFields(record)
-                    os_log("Updated system fields for CKRecord %{public}s on object %{public}s", log: .syncCoordinator, type: .info, record.recordID.recordName, localBook.objectID.uriRepresentation().relativeString)
-                }
+                download(ckRecord: record, option: !updateAllMetadata ? .storeSystemFieldsOnly : nil)
             }
             syncContext.saveAndLogIfErrored()
             os_log("Completed updating %d local model(s) after upload", log: .syncCoordinator, type: .default, records.count)
@@ -462,7 +454,7 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
         os_log("%{public}@", log: .syncCoordinator, type: .debug, #function)
 
         var changedRecords: [CKRecord] = []
-        var deletedRecordIDs: [CKRecord.ID] = []
+        var deletedRecordIDs: [CKRecordIdentity] = []
 
         let operation = CKFetchRecordZoneChangesOperation()
         operation.name = "FetchRemoteChanges"
@@ -518,10 +510,8 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
 
         operation.recordChangedBlock = { changedRecords.append($0) }
 
-        operation.recordWithIDWasDeletedBlock = { recordID, _ in
-            // In the future we may need to use the second arg to this closure and map
-            // between record types and deleted record IDs (when we need to sync more types)
-            deletedRecordIDs.append(recordID)
+        operation.recordWithIDWasDeletedBlock = { recordID, recordType in
+            deletedRecordIDs.append(CKRecordIdentity(ID: recordID, type: recordType))
         }
 
         operation.fetchRecordZoneChangesCompletionBlock = { [weak self] error in
@@ -549,7 +539,7 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
         cloudOperationQueue.addOperation(operation)
     }
 
-    private func commitServerChangesToDatabase(with changedRecords: [CKRecord], deletedRecordIDs: [CKRecord.ID]) {
+    private func commitServerChangesToDatabase(with changedRecords: [CKRecord], deletedRecordIDs: [CKRecordIdentity]) {
         guard !changedRecords.isEmpty || !deletedRecordIDs.isEmpty else {
             os_log("Finished record zone changes fetch with no changes", log: .syncCoordinator, type: .info)
             return
@@ -560,10 +550,10 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
         workQueue.async {
             self.syncContext.performAndWait {
                 for record in changedRecords {
-                    self.downloadBook(record)
+                    self.download(ckRecord: record, option: .createIfNotFound)
                 }
                 for deletedID in deletedRecordIDs {
-                    self.locallyPresentBook(withId: deletedID)?.delete()
+                    self.localEntity(forIdentifier: deletedID)?.delete()
                 }
                 self.syncContext.saveAndLogIfErrored()
                 os_log("Completed updating local model(s) after download", log: .syncCoordinator, type: .default)
@@ -571,45 +561,86 @@ final class SyncCoordinator { //swiftlint:disable:this type_body_length
         }
     }
     
-    private func downloadBook(_ remoteBook: CKRecord) {
-        if remoteBook.recordType == Book.ckRecordType {
-            if let localBook = self.lookupLocalBook(for: remoteBook) {
-                os_log("Updating existing local book with remote record %{public}s", log: .syncCoordinator, type: .info, remoteBook.recordID.recordName)
-                let keysPendingUpdate = buffer.compactMap { $0.updates[localBook.objectID] }.joined().compactMap { Book.CKRecordKey(rawValue: $0) }
-                localBook.update(from: remoteBook, excluding: keysPendingUpdate)
-            } else {
-                os_log("Creating new book from remote record %{public}s", log: .syncCoordinator, type: .info, remoteBook.recordID.recordName)
-                let book = Book(context: self.syncContext)
-                book.update(from: remoteBook, excluding: nil)
-            }
+    private func download(ckRecord: CKRecord, option: DownloadOption?) {
+        switch ckRecord.recordType {
+        case Book.ckRecordType: download(Book.self, ckRecord, option: option)
+        case List.ckRecordType: download(List.self, ckRecord, option: option)
+        default:
+            os_log("Unexpected record type during download: %{public}s", log: .syncCoordinator, type: .error, ckRecord.recordType)
         }
     }
-
-    private func lookupLocalBook(for remoteBook: CKRecord) -> Book? {
-        let remoteIdLookup = NSManagedObject.fetchRequest(Book.self)
-        remoteIdLookup.predicate = Book.withRemoteIdentifier(remoteBook.recordID.recordName)
-        remoteIdLookup.fetchLimit = 1
-        if let book = (try! syncContext.fetch(remoteIdLookup)).first {
-            os_log("Found local book with specified remote identifier %{public}s", log: .syncCoordinator, type: .debug, remoteBook.recordID.recordName)
-            return book
+    
+    private func localEntity(forIdentifier remoteIdentifier: CKRecordIdentity) -> NSManagedObject? {
+        switch remoteIdentifier.type {
+        case Book.ckRecordType: return lookupLocalObject(ofType: Book.self, withIdentifier: remoteIdentifier.ID.recordName)
+        case List.ckRecordType: return lookupLocalObject(ofType: List.self, withIdentifier: remoteIdentifier.ID.recordName)
+        default:
+            os_log("Unexpected record type supplied: %{public}s", log: .syncCoordinator, type: .error, remoteIdentifier.type)
+            return nil
         }
+    }
+    
+    enum DownloadOption {
+        case storeSystemFieldsOnly
+        case createIfNotFound
+    }
+    
+    private func download<LocalType>(_ type: LocalType.Type, _ ckRecord: CKRecord, option: DownloadOption?) where LocalType: CKRecordRepresentable {
+        if let localObject: LocalType = lookupLocalObject(for: ckRecord) {
+            if localObject.isDeleted {
+                os_log("Local %{public}s was deleted; skipping local update", log: .syncCoordinator, type: .default, ckRecord.recordType)
+                return
+            }
+            
+            os_log("Updating existing local %{public}s with remote record %{public}s", log: .syncCoordinator, type: .info, ckRecord.recordType, ckRecord.recordID.recordName)
+            if option == .storeSystemFieldsOnly {
+                localObject.setSystemAndIdentifierFields(from: ckRecord)
+                os_log("Updated system fields for CKRecord %{public}s on object %{public}s", log: .syncCoordinator, type: .info, ckRecord.recordID.recordName, localObject.objectID.uriRepresentation().relativeString)
+            } else {
+                let keysPendingUpdate = buffer.compactMap { $0.updates[localObject.objectID] }.joined().flatMap {
+                    localObject.localPropertyKeys(forCkRecordKey: $0)
+                }
+                localObject.update(from: ckRecord, excluding: keysPendingUpdate)
+                os_log("Updated metadata for CKRecord %{public}s on object %{public}s", log: .syncCoordinator, type: .info, ckRecord.recordID.recordName, localObject.objectID.uriRepresentation().relativeString)
+            }
+        } else if option == .createIfNotFound {
+            os_log("No local %{public}s found for %{public}s with record name %{public}s", log: .syncCoordinator, type: .default, ckRecord.recordType, ckRecord.recordType, ckRecord.recordID.recordName)
+            let newItem = LocalType(context: syncContext)
+            newItem.update(from: ckRecord, excluding: nil)
+        }
+    }
+    
+    func lookupLocalObject<LocalType>(for remoteRecord: CKRecord) -> LocalType? where LocalType: CKRecordRepresentable {
+        let recordName = remoteRecord.recordID.recordName
+        if let localItem = lookupLocalObject(ofType: LocalType.self, withIdentifier: recordName) {
+            os_log("Found local %{public}s with specified remote identifier %{public}s", log: .syncCoordinator, type: .debug, LocalType.ckRecordType, recordName)
+            return localItem
+        }
+        os_log("No local %{public}s with specified remote identifier %{public}s; looking for other candidates", log: .syncCoordinator, type: .debug, LocalType.ckRecordType, recordName)
 
-        let localIdLookup = NSManagedObject.fetchRequest(Book.self)
+        let localIdLookup = LocalType.fetchRequest()
         localIdLookup.fetchLimit = 1
-        localIdLookup.predicate = Book.candidateBookForRemoteIdentifier(remoteBook.recordID)
-        if let book = (try! syncContext.fetch(localIdLookup)).first {
-            os_log("Found candidate local book corresponding to remote identifier %{public}s", log: .syncCoordinator, type: .debug, remoteBook.recordID.recordName)
-            return book
+        localIdLookup.predicate = NSCompoundPredicate(
+            andPredicateWithSubpredicates: [
+                NSPredicate(format: "%K == NULL", SyncConstants.remoteIdentifierKeyPath),
+                LocalType.matchCandidateItemForRemoteRecord(remoteRecord)
+            ]
+        )
+            
+        if let localItem = (try! syncContext.fetch(localIdLookup)).first as? LocalType {
+            os_log("Found candidate local %{public}s for remote record %{public}s using metadata", log: .syncCoordinator, type: .debug,
+                   LocalType.ckRecordType, recordName)
+            return localItem
         }
-
+        
+        os_log("No local %{public}s found for remote record %{public}s", log: .syncCoordinator, type: .debug, LocalType.ckRecordType, recordName)
         return nil
     }
-
-    private func locallyPresentBook(withId id: CKRecord.ID) -> Book? {
-        os_log("Fetching local book corresponding to supplied remote identifier %{public}s", log: .syncCoordinator, type: .debug, id.recordName)
-        let fetchRequest = NSManagedObject.fetchRequest(Book.self)
-        fetchRequest.predicate = Book.withRemoteIdentifier(id.recordName)
-        return (try! syncContext.fetch(fetchRequest)).first
+    
+    func lookupLocalObject<LocalType>(ofType type: LocalType.Type, withIdentifier recordName: String) -> LocalType? where LocalType: CKRecordRepresentable {
+        let fetchRequest = LocalType.fetchRequest()
+        fetchRequest.predicate = LocalType.remoteIdentifierPredicate(recordName)
+        fetchRequest.fetchLimit = 1
+        return (try! syncContext.fetch(fetchRequest)).first as? LocalType
     }
-
 }

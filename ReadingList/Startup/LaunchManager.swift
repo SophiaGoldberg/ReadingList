@@ -241,6 +241,9 @@ class LaunchManager {
         #if DEBUG
         alert.addAction(UIAlertAction(title: "Delete Store", style: .destructive) { _ in
             NSPersistentStoreCoordinator().destroyAndDeleteStore(at: URL.applicationSupport.appendingPathComponent(PersistentStoreManager.storeFileName))
+            // More accurately model a reinstall by clearing UserDefaults too
+            UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
+            UserDefaults.standard.synchronize()
             self.initialisePersistentStore()
             self.storeMigrationFailed = false
         })

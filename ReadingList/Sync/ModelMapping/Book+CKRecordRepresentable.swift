@@ -4,33 +4,44 @@ import os.log
 import ReadingList_Foundation
 
 extension Book: CKRecordRepresentable {
+    static let allCKRecordKeys = CKRecordKey.allCases.map(\.rawValue)
     static let ckRecordType = "Book"
 
-    func newRecordID(in zoneID: CKRecordZone.ID) -> CKRecord.ID {
-        let recordName: String
+    @NSManaged var ckRecordEncodedSystemFields: Data?
+
+    func newRecordName() -> String {
         if let googleBooksId = googleBooksId {
-            recordName = "gbid:\(googleBooksId)"
+            return "gbid:\(googleBooksId)"
         } else if let manualBookId = manualBookId {
-            recordName = "mid:\(manualBookId)"
+            return "mid:\(manualBookId)"
         } else {
             fatalError("No google book or manual book ID")
         }
-        return CKRecord.ID(recordName: recordName, zoneID: zoneID)
     }
-
-    static func candidateBookForRemoteIdentifier(_ recordID: CKRecord.ID) -> NSPredicate {
-        if recordID.recordName.starts(with: "gbid:") {
-            return NSPredicate(format: "%K == %@", #keyPath(Book.googleBooksId), String(recordID.recordName.dropFirst(5)))
+    
+    func localPropertyKeys(forCkRecordKey ckRecordKey: String) -> [String] {
+        return CKRecordKey(rawValue: ckRecordKey)?.localPropertyKeys() ?? []
+    }
+    
+    func ckRecordKey(forLocalPropertyKey localPropertyKey: String) -> String? {
+        return CKRecordKey.from(coreDataKey: localPropertyKey)?.rawValue
+    }
+    
+    static func matchCandidateItemForRemoteRecord(_ record: CKRecord) -> NSPredicate {
+        let recordName = record.recordID.recordName
+        if recordName.starts(with: "gbid:") {
+            return NSPredicate(format: "%K == %@", #keyPath(Book.googleBooksId), String(recordName.dropFirst(5)))
         }
-        if recordID.recordName.starts(with: "mid:") {
-            return NSPredicate(format: "%K == %@", #keyPath(Book.manualBookId), String(recordID.recordName.dropFirst(4)))
+        if recordName.starts(with: "mid:") {
+            return NSPredicate(format: "%K == %@", #keyPath(Book.manualBookId), String(recordName.dropFirst(4)))
         }
-        os_log("Unexpected format of remote record ID: %{public}s", log: .syncCoordinator, type: .error, recordID.recordName)
+        os_log("Unexpected format of remote record ID: %{public}s", log: .syncCoordinator, type: .error, recordName)
         return NSPredicate(boolean: false)
     }
 
-    func getValue(for ckRecordKey: CKRecordKey) -> CKRecordValue? { //swiftlint:disable:this cyclomatic_complexity
-        switch ckRecordKey {
+    func getValue(for ckRecordKey: String) -> CKRecordValue? { //swiftlint:disable:this cyclomatic_complexity
+        guard let key = CKRecordKey(rawValue: ckRecordKey) else { return nil }
+        switch key {
         case .title: return title as NSString
         case .subtitle: return subtitle as NSString?
         case .googleBooksId: return googleBooksId as NSString?
@@ -64,8 +75,9 @@ extension Book: CKRecordRepresentable {
         }
     }
 
-    func setValue(_ value: CKRecordValue?, for ckRecordKey: CKRecordKey) { //swiftlint:disable:this cyclomatic_complexity
-        switch ckRecordKey {
+    func setValue(_ value: CKRecordValue?, for ckRecordKey: String) { //swiftlint:disable:this cyclomatic_complexity
+        guard let key = CKRecordKey(rawValue: ckRecordKey) else { return }
+        switch key {
         case .title:
             if let newTitle = value as? String {
                 title = newTitle
@@ -116,56 +128,6 @@ extension Book: CKRecordRepresentable {
                 return
             }
             coverImage = FileManager.default.contents(atPath: assetUrl.path)
-        }
-    }
-
-    /**
-     Returns a CKRecord with every CKRecordKey set to the CKValue corresponding to the value in this book.
-     */
-    func recordForInsert(into zone: CKRecordZone.ID) -> CKRecord {
-        let ckRecord = CKRecord(recordType: Book.ckRecordType, recordID: newRecordID(in: zone))
-        for key in Book.CKRecordKey.allCases {
-            if let valueForKey = getValue(for: key) {
-                ckRecord[key] = valueForKey
-            }
-        }
-        return ckRecord
-    }
-
-    func recordForUpdate(changedCoreDataKeys: [String]) -> CKRecord? {
-        guard let ckRecord = getSystemFieldsRecord() else { return nil }
-        let changeCkRecordKeys = changedCoreDataKeys.compactMap(CKRecordKey.from(coreDataKey:)).distinct()
-        if changeCkRecordKeys.isEmpty { return nil }
-        for changedKey in changeCkRecordKeys {
-            ckRecord[changedKey] = getValue(for: changedKey)
-        }
-        return ckRecord
-    }
-
-    /**
-     Updates values in this book with those from the provided CKRecord. Values in this books which have a pending
-     change are not updated.
-    */
-    func update(from ckRecord: CKRecord, excluding excludedKeys: [CKRecordKey]?) {
-        if let existingCKRecordSystemFields = getSystemFieldsRecord(), existingCKRecordSystemFields.recordChangeTag == ckRecord.recordChangeTag {
-            os_log("CKRecord %{public}s has same change tag as local book; skipping update", log: .syncCoordinator, type: .debug, ckRecord.recordID.recordName)
-            return
-        }
-
-        if remoteIdentifier != ckRecord.recordID.recordName {
-            os_log("Updating remoteIdentifier from %{public}s to %{public}s", log: .syncCoordinator, type: .debug, remoteIdentifier ?? "nil", ckRecord.recordID.recordName)
-            remoteIdentifier = ckRecord.recordID.recordName
-        }
-
-        setSystemFields(ckRecord)
-
-        // This book may have local changes which we don't want to overwrite with the values on the server.
-        for key in CKRecordKey.allCases {
-            if let excludedKeys = excludedKeys, excludedKeys.contains(key) {
-                os_log(.info, log: .syncCoordinator, "CKRecordKey '%{public}s' not used to update local store due to pending local change", key.rawValue)
-                continue
-            }
-            setValue(ckRecord[key], for: key)
         }
     }
 

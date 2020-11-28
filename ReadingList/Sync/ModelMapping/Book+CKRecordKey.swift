@@ -44,6 +44,26 @@ extension Book {
             default: return nil
             }
         }
+        
+        func localPropertyKeys() -> [String] { //swiftlint:disable:this cyclomatic_complexity
+            switch self {
+            case .title: return [#keyPath(Book.title)]
+            case .subtitle: return [#keyPath(Book.subtitle)]
+            case .authors: return [#keyPath(Book.authors)]
+            case .coverImage: return [#keyPath(Book.coverImage)]
+            case .googleBooksId: return [#keyPath(Book.googleBooksId)]
+            case .isbn13: return [Book.Key.isbn13.rawValue]
+            case .pageCount: return [Book.Key.pageCount.rawValue]
+            case .publicationDate: return [#keyPath(Book.publicationDate)]
+            case .bookDescription: return [#keyPath(Book.bookDescription)]
+            case .notes: return [#keyPath(Book.notes)]
+            case .currentPage: return [Book.Key.currentPage.rawValue]
+            case .languageCode: return [Book.Key.languageCode.rawValue]
+            case .rating: return [Book.Key.rating.rawValue]
+            case .sort: return [#keyPath(Book.sort)]
+            case .readDates: return [#keyPath(Book.startedReading), #keyPath(Book.finishedReading)]
+            }
+        }
     }
 }
 
