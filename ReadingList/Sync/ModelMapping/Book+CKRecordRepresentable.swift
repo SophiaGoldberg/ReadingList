@@ -18,15 +18,15 @@ extension Book: CKRecordRepresentable {
             fatalError("No google book or manual book ID")
         }
     }
-    
+
     func localPropertyKeys(forCkRecordKey ckRecordKey: String) -> [String] {
         return CKRecordKey(rawValue: ckRecordKey)?.localPropertyKeys() ?? []
     }
-    
+
     func ckRecordKey(forLocalPropertyKey localPropertyKey: String) -> String? {
         return CKRecordKey.from(coreDataKey: localPropertyKey)?.rawValue
     }
-    
+
     static func matchCandidateItemForRemoteRecord(_ record: CKRecord) -> NSPredicate {
         let recordName = record.recordID.recordName
         if recordName.starts(with: "gbid:") {
@@ -39,7 +39,7 @@ extension Book: CKRecordRepresentable {
         return NSPredicate(boolean: false)
     }
 
-    func getValue(for ckRecordKey: String) -> CKRecordValue? { //swiftlint:disable:this cyclomatic_complexity
+    func getValue(for ckRecordKey: String) -> CKRecordValueProtocol? { //swiftlint:disable:this cyclomatic_complexity
         guard let key = CKRecordKey(rawValue: ckRecordKey) else { return nil }
         switch key {
         case .title: return title as NSString
@@ -75,7 +75,7 @@ extension Book: CKRecordRepresentable {
         }
     }
 
-    func setValue(_ value: CKRecordValue?, for ckRecordKey: String) { //swiftlint:disable:this cyclomatic_complexity
+    func setValue(_ value: CKRecordValueProtocol?, for ckRecordKey: String) { //swiftlint:disable:this cyclomatic_complexity
         guard let key = CKRecordKey(rawValue: ckRecordKey) else { return }
         switch key {
         case .title:

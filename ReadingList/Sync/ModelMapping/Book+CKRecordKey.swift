@@ -44,7 +44,7 @@ extension Book {
             default: return nil
             }
         }
-        
+
         func localPropertyKeys() -> [String] { //swiftlint:disable:this cyclomatic_complexity
             switch self {
             case .title: return [#keyPath(Book.title)]

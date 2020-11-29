@@ -7,7 +7,7 @@ extension List: CKRecordRepresentable {
     static let ckRecordType = "List"
     static let allCKRecordKeys = ListCKRecordKey.allCases.map(\.rawValue)
     @NSManaged var ckRecordEncodedSystemFields: Data?
-    
+
     static func matchCandidateItemForRemoteRecord(_ record: CKRecord) -> NSPredicate {
         guard record.recordType == ckRecordType else {
             os_log("Attempted to match a CKRecord of type %{public}s to a List", log: .syncCoordinator, type: .fault, record.recordType)
@@ -16,8 +16,8 @@ extension List: CKRecordRepresentable {
         guard let listName = record[ListCKRecordKey.name] as? String else { return NSPredicate(boolean: false) }
         return NSPredicate(format: "%K = %@", #keyPath(List.name), listName)
     }
-    
-    func getValue(for ckRecordKey: String) -> CKRecordValue? { //swiftlint:disable:this cyclomatic_complexity
+
+    func getValue(for ckRecordKey: String) -> CKRecordValueProtocol? { //swiftlint:disable:this cyclomatic_complexity
         guard let key = ListCKRecordKey(rawValue: ckRecordKey) else { return nil }
         switch key {
         case .name: return name as NSString
@@ -25,8 +25,8 @@ extension List: CKRecordRepresentable {
         case .sort: return sort as NSNumber
         }
     }
-    
-    func setValue(_ value: CKRecordValue?, for ckRecordKey: String) {
+
+    func setValue(_ value: CKRecordValueProtocol?, for ckRecordKey: String) {
         guard let key = ListCKRecordKey(rawValue: ckRecordKey) else { return }
         switch key {
         case .name:
@@ -48,12 +48,12 @@ extension List: CKRecordRepresentable {
     func newRecordName() -> String {
         UUID().uuidString
     }
-    
+
     func localPropertyKeys(forCkRecordKey ckRecordKey: String) -> [String] {
         guard let ckKey = ListCKRecordKey(rawValue: ckRecordKey) else { return [] }
         return ckKey.localKeys()
     }
-    
+
     func ckRecordKey(forLocalPropertyKey localPropertyKey: String) -> String? {
         return ListCKRecordKey.from(coreDataKey: localPropertyKey)?.rawValue
     }
@@ -87,7 +87,7 @@ enum ListCKRecordKey: String, CaseIterable { //swiftlint:disable redundant_strin
         default: return nil
         }
     }
-    
+
     func localKeys() -> [String] {
         switch self {
         case .name: return [#keyPath(List.name)]

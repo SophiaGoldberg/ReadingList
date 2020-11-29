@@ -93,6 +93,8 @@
         </fetchIndex>
     </entity>
     <entity name="ListItem" representedClassName="ListItem" syncable="YES">
+        <attribute name="ckRecordEncodedSystemFields" optional="YES" attributeType="Binary"/>
+        <attribute name="remoteIdentifier" optional="YES" attributeType="String" preserveAfterDeletion="YES"/>
         <attribute name="sort" attributeType="Integer 32" usesScalarValueType="YES"/>
         <relationship name="book" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Book" inverseName="listItems" inverseEntity="Book"/>
         <relationship name="list" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="List" inverseName="items" inverseEntity="List"/>
@@ -114,7 +116,7 @@
     <elements>
         <element name="Book" positionX="-63" positionY="-18" width="128" height="463"/>
         <element name="List" positionX="-54" positionY="117" width="128" height="134"/>
-        <element name="ListItem" positionX="-45" positionY="144" width="128" height="88"/>
+        <element name="ListItem" positionX="-45" positionY="144" width="128" height="104"/>
         <element name="Subject" positionX="-63" positionY="90" width="128" height="75"/>
     </elements>
 </model>

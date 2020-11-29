@@ -4,6 +4,7 @@ import CloudKit
 import PersistedPropertyWrapper
 import os.log
 
+/*
 class BookCloudKitRemote {
     let bookZoneName = "BookZone"
 
@@ -155,3 +156,4 @@ class BookCloudKitRemote {
         privateCloudDatabase.add(operation)
     }
 }
+*/

@@ -7,12 +7,6 @@ struct PersistentHistoryFetcher {
     let context: NSManagedObjectContext
     let excludeHistoryFromContextWithName: String
 
-    /// Fetches transactions created by other contexts
-    func fetch(fromToken token: NSPersistentHistoryToken) -> [NSPersistentHistoryTransaction] {
-        let fetchRequest = createFetchRequest(fromToken: token)
-        return fetchHistory(fetchRequest)
-    }
-
     func fetch(fromDate date: Date) -> [NSPersistentHistoryTransaction] {
         let fetchRequest = createFetchRequest(fromDate: date)
         return fetchHistory(fetchRequest)
@@ -32,12 +26,6 @@ struct PersistentHistoryFetcher {
         return historyResult.result as! [NSPersistentHistoryTransaction]
     }
 
-    private func createFetchRequest(fromToken token: NSPersistentHistoryToken) -> NSPersistentHistoryChangeRequest {
-        let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: token)
-        historyFetchRequest.fetchRequest = fetchRequest()
-        return historyFetchRequest
-    }
-
     private func createFetchRequest(fromDate date: Date) -> NSPersistentHistoryChangeRequest {
         let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: date)
         historyFetchRequest.fetchRequest = fetchRequest()
@@ -49,7 +37,7 @@ struct PersistentHistoryFetcher {
             os_log(.error, "NSPersistentHistoryTransaction.fetchRequest was nil")
             return nil
         }
-        
+
         // Only look at transactions not from the excluded context
         fetchRequest.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
             NSPredicate(format: "%K == NULL", #keyPath(NSPersistentHistoryTransaction.contextName)),

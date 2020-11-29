@@ -5,7 +5,7 @@ import os.log
 typealias RemoteIdentifier = String
 
 struct ManagedObjectChangeSet: CustomDebugStringConvertible, Equatable {
-    let transactionToken: NSPersistentHistoryToken
+    let timestamp: Date
     var deletions = Set<RemoteIdentifier>()
     var updates = [NSManagedObjectID: [String]]()
     var inserts = Set<NSManagedObjectID>()
@@ -19,8 +19,8 @@ struct ManagedObjectChangeSet: CustomDebugStringConvertible, Equatable {
         isEmpty ? "Empty" : "\(updates.count) updates, \(inserts.count) inserts, \(deletions.count) deletions"
     }
 
-    init(transactionToken: NSPersistentHistoryToken, changes: [ManagedObjectChange]) {
-        self.transactionToken = transactionToken
+    init(timestamp: Date, changes: [ManagedObjectChange]) {
+        self.timestamp = timestamp
         for change in changes {
             switch change {
             case .insert(let id):
@@ -46,7 +46,7 @@ extension NSPersistentHistoryTransaction {
         guard let changes = changes else { return nil }
         let managedObjectChanges = changes.compactMap { $0.localChangeRepresentation() }
         if managedObjectChanges.isEmpty { return nil }
-        return ManagedObjectChangeSet(transactionToken: token, changes: managedObjectChanges)
+        return ManagedObjectChangeSet(timestamp: timestamp, changes: managedObjectChanges)
     }
 }
 

@@ -5,6 +5,7 @@ import os.log
 
 struct SyncConstants {
     static let remoteIdentifierKeyPath = "remoteIdentifier"
+    static let zoneID = CKRecordZone.ID(zoneName: "ReadingListZone", ownerName: CKCurrentUserDefaultName)
 }
 
 protocol CKRecordRepresentable: NSManagedObject {
@@ -15,14 +16,14 @@ protocol CKRecordRepresentable: NSManagedObject {
     var remoteIdentifier: String? { get set }
     var ckRecordEncodedSystemFields: Data? { get set }
     func newRecordName() -> String
-    
+
     func localPropertyKeys(forCkRecordKey ckRecordKey: String) -> [String]
     func ckRecordKey(forLocalPropertyKey localPropertyKey: String) -> String?
 
     static func matchCandidateItemForRemoteRecord(_ record: CKRecord) -> NSPredicate
 
-    func getValue(for key: String) -> CKRecordValue?
-    func setValue(_ value: CKRecordValue?, for ckRecordKey: String)
+    func getValue(for key: String) -> CKRecordValueProtocol?
+    func setValue(_ value: CKRecordValueProtocol?, for ckRecordKey: String)
 }
 
 extension CKRecordRepresentable {
@@ -34,7 +35,7 @@ extension CKRecordRepresentable {
     func setSystemFields(_ ckRecord: CKRecord?) {
         ckRecordEncodedSystemFields = ckRecord?.encodedSystemFields()
     }
-    
+
     static func remoteIdentifierPredicate(_ id: String) -> NSPredicate {
         return NSPredicate(format: "%K == %@", SyncConstants.remoteIdentifierKeyPath, id)
     }
@@ -43,7 +44,7 @@ extension CKRecordRepresentable {
         let recordName = newRecordName()
         return CKRecord.ID(recordName: recordName, zoneID: zone)
     }
-    
+
     func recordForInsert(into zone: CKRecordZone.ID) -> CKRecord {
         let ckRecord = CKRecord(recordType: Self.ckRecordType, recordID: newRecordID(in: zone))
         for key in Self.allCKRecordKeys {
@@ -69,7 +70,7 @@ extension CKRecordRepresentable {
             os_log("%{public}s", log: .syncCoordinator, type: .fault, Thread.callStackSymbols.joined(separator: "\n"))
             fatalError("Attempted to update local object from CKRecord with different remoteIdentifier")
         }
-        
+
         if let existingCKRecordSystemFields = getSystemFieldsRecord(), existingCKRecordSystemFields.recordChangeTag == ckRecord.recordChangeTag {
             os_log("CKRecord %{public}s has same change tag as local book; no update made", log: .syncCoordinator, type: .debug, ckRecord.recordID.recordName)
             return
@@ -80,7 +81,7 @@ extension CKRecordRepresentable {
         }
         setSystemFields(ckRecord)
     }
-    
+
     /**
      Updates values in this book with those from the provided CKRecord. Values in this books which have a pending
      change are not updated.
