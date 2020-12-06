@@ -23,6 +23,14 @@ class ConcurrentCKQueue {
         operation.qualityOfService = qos
         operationQueue.addOperation(operation)
     }
+    
+    func suspend() {
+        operationQueue.isSuspended = true
+    }
+    
+    func resume() {
+        operationQueue.isSuspended = false
+    }
 
     func suspendCloudInterop(dueTo error: Error) -> Bool {
         guard let effectiveError = error as? CKError else { return false }

@@ -34,12 +34,12 @@ extension List: CKRecordRepresentable {
                 name = nameValue
             }
         case .order:
-            if let orderNumber = value as? Int16,
+            if let orderNumber = value?.asInt16,
                let bookSortOrder = BookSort(rawValue: orderNumber) {
                 order = bookSortOrder
             }
         case .sort:
-            if let sortNumber = value as? Int32 {
+            if let sortNumber = value?.asInt32 {
                 sort = sortNumber
             }
         }

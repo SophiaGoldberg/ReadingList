@@ -31,7 +31,7 @@ extension ListItem: CKRecordRepresentable {
     func getValue(for key: String) -> CKRecordValueProtocol? { //swiftlint:disable:this cyclomatic_complexity
         guard let ckRecordKey = ListItemCKRecordKey(rawValue: key) else { return nil }
         switch ckRecordKey {
-        case .sort: return Int(sort)!
+        case .sort: return sort
         case .book:
             guard let bookIdentifier = book.remoteIdentifier else { return nil }
             return CKRecord.Reference(recordID: CKRecord.ID(recordName: bookIdentifier, zoneID: SyncConstants.zoneID), action: .deleteSelf)
@@ -45,9 +45,7 @@ extension ListItem: CKRecordRepresentable {
         guard let key = ListItemCKRecordKey(rawValue: ckRecordKey) else { return }
         switch key {
         case .sort:
-            if let sortNumber = value as? NSNumber, let sortInt32 = Int32(exactly: sortNumber) {
-                sort = sortInt32
-            }
+            sort = value?.asInt32 ?? 0
         case .book:
             guard let reference = value as? CKRecord.Reference else { return }
             let request = Book.fetchRequest()

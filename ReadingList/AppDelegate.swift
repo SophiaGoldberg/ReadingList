@@ -39,7 +39,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
             // Initialise the Sync Coordinator which will maintain iCloud synchronisation
             if #available(iOS 13.0, *) {
-                self.syncCoordinator = SyncCoordinator(persistentStoreCoordinator: PersistentStoreManager.container.persistentStoreCoordinator)
+                self.syncCoordinator = SyncCoordinator(
+                    persistentStoreCoordinator: PersistentStoreManager.container.persistentStoreCoordinator,
+                    orderedTypesToSync: [Book.self, List.self, ListItem.self]
+                )
                 if GeneralSettings.iCloudSyncEnabled {
                     (self.syncCoordinator as! SyncCoordinator).start()
                 }

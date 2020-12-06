@@ -244,15 +244,6 @@ extension Book {
         }
     }
 
-    func getSystemFieldsRecord() -> CKRecord? {
-        guard let systemFieldsData = ckRecordEncodedSystemFields else { return nil }
-        return CKRecord(systemFieldsData: systemFieldsData)!
-    }
-
-    func setSystemFields(_ ckRecord: CKRecord?) {
-        ckRecordEncodedSystemFields = ckRecord?.encodedSystemFields()
-    }
-
     func populate(fromFetchResult fetchResult: GoogleBooksApi.FetchResult) {
         googleBooksId = fetchResult.id
         title = fetchResult.title

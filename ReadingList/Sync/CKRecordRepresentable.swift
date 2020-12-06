@@ -29,7 +29,7 @@ protocol CKRecordRepresentable: NSManagedObject {
 extension CKRecordRepresentable {
     func getSystemFieldsRecord() -> CKRecord? {
         guard let systemFieldsData = ckRecordEncodedSystemFields else { return nil }
-        return CKRecord(systemFieldsData: systemFieldsData)!
+        return CKRecord(systemFieldsData: systemFieldsData)
     }
 
     func setSystemFields(_ ckRecord: CKRecord?) {
@@ -40,26 +40,32 @@ extension CKRecordRepresentable {
         return NSPredicate(format: "%K == %@", SyncConstants.remoteIdentifierKeyPath, id)
     }
 
-    func newRecordID(in zone: CKRecordZone.ID) -> CKRecord.ID {
+    func newRecordID() -> CKRecord.ID {
         let recordName = newRecordName()
-        return CKRecord.ID(recordName: recordName, zoneID: zone)
+        return CKRecord.ID(recordName: recordName, zoneID: SyncConstants.zoneID)
     }
 
-    func recordForInsert(into zone: CKRecordZone.ID) -> CKRecord {
-        let ckRecord = CKRecord(recordType: Self.ckRecordType, recordID: newRecordID(in: zone))
-        for key in Self.allCKRecordKeys {
-            guard let valueForKey = getValue(for: key) else { continue }
-            ckRecord[key] = valueForKey
+    func buildCKRecord(ckRecordKeys: [String]? = nil) -> CKRecord {
+        let ckRecord: CKRecord
+        if let encodedSystemFields = ckRecordEncodedSystemFields, let ckRecordFromSystemFields = CKRecord(systemFieldsData: encodedSystemFields) {
+            ckRecord = ckRecordFromSystemFields
+        } else if let remoteIdentifier = remoteIdentifier {
+            ckRecord = CKRecord(recordType: Self.ckRecordType, recordID: CKRecord.ID(recordName: remoteIdentifier, zoneID: SyncConstants.zoneID))
+        } else {
+            let recordName = newRecordName()
+            remoteIdentifier = recordName
+            ckRecord = CKRecord(recordType: Self.ckRecordType, recordID: CKRecord.ID(recordName: recordName, zoneID: SyncConstants.zoneID))
         }
-        return ckRecord
-    }
 
-    func recordForUpdate(changedCoreDataKeys: [String]) -> CKRecord? {
-        guard let ckRecord = getSystemFieldsRecord() else { return nil }
-        let changeCkRecordKeys = changedCoreDataKeys.compactMap(ckRecordKey(forLocalPropertyKey:)).distinct()
-        if changeCkRecordKeys.isEmpty { return nil }
-        for changedKey in changeCkRecordKeys {
-            ckRecord[changedKey] = getValue(for: changedKey)
+        let keysToStore: [String]
+        if let changedCKRecordKeys = ckRecordKeys, !changedCKRecordKeys.isEmpty {
+            keysToStore = changedCKRecordKeys.distinct()
+        } else {
+            keysToStore = Self.allCKRecordKeys
+        }
+
+        for key in keysToStore {
+            ckRecord[key] = getValue(for: key)
         }
         return ckRecord
     }

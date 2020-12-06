@@ -42,23 +42,23 @@ extension Book: CKRecordRepresentable {
     func getValue(for ckRecordKey: String) -> CKRecordValueProtocol? { //swiftlint:disable:this cyclomatic_complexity
         guard let key = CKRecordKey(rawValue: ckRecordKey) else { return nil }
         switch key {
-        case .title: return title as NSString
-        case .subtitle: return subtitle as NSString?
-        case .googleBooksId: return googleBooksId as NSString?
-        case .isbn13: return isbn13 as NSNumber?
-        case .pageCount: return pageCount as NSNumber?
-        case .publicationDate: return publicationDate as NSDate?
-        case .bookDescription: return bookDescription as NSString?
-        case .notes: return notes as NSString?
-        case .currentPage: return currentPage as NSNumber?
-        case .languageCode: return language?.rawValue as NSString?
-        case .rating: return rating as NSNumber?
-        case .sort: return sort as NSNumber?
+        case .title: return title
+        case .subtitle: return subtitle
+        case .googleBooksId: return googleBooksId
+        case .isbn13: return isbn13
+        case .pageCount: return pageCount
+        case .publicationDate: return publicationDate
+        case .bookDescription: return bookDescription
+        case .notes: return notes
+        case .currentPage: return currentPage
+        case .languageCode: return language?.rawValue
+        case .rating: return rating
+        case .sort: return sort
         case .readDates:
             switch readState {
             case .toRead: return nil
-            case .reading: return [startedReading! as NSDate] as NSArray
-            case .finished: return [startedReading! as NSDate, finishedReading! as NSDate] as NSArray
+            case .reading: return [startedReading!]
+            case .finished: return [startedReading!, finishedReading!]
             }
         case .authors:
             do {
@@ -85,20 +85,18 @@ extension Book: CKRecordRepresentable {
         case .subtitle: subtitle = value as? String
         case .googleBooksId: googleBooksId = value as? String
         case .isbn13: isbn13 = value as? Int64
-        case .pageCount: pageCount = value as? Int32
+        case .pageCount: pageCount = value?.asInt32
         case .publicationDate: publicationDate = value as? Date
         case .bookDescription: bookDescription = value as? String
         case .notes: notes = value as? String
-        case .currentPage: setProgress(.page(value as? Int32))
+        case .currentPage: setProgress(.page(value?.asInt32))
         case .languageCode:
             if let languageString = value as? String {
                 language = LanguageIso639_1(rawValue: languageString)
             }
-        case .rating: rating = value as? Int16
+        case .rating: rating = value?.asInt16
         case .sort:
-            if let newSort = value as? Int32 {
-                sort = newSort
-            }
+            sort = value?.asInt32 ?? 0
         case .readDates:
             if let datesArray = value as? [Date] {
                 if datesArray.count == 1 {

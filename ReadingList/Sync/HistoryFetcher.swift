@@ -20,7 +20,7 @@ struct PersistentHistoryFetcher {
             }
             historyResult = historyExecutionResult
         } catch {
-            os_log(.error, "Failed to fetch transaction history with token")
+            os_log(.error, "Failed to fetch transaction history")
             return []
         }
         return historyResult.result as! [NSPersistentHistoryTransaction]
