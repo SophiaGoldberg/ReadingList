@@ -87,6 +87,13 @@ extension CKRecordRepresentable {
         }
         setSystemFields(ckRecord)
     }
+    
+    @discardableResult
+    static func create(from ckRecord: CKRecord, in context: NSManagedObjectContext) -> Self {
+        let newItem = Self(context: context)
+        newItem.update(from: ckRecord, excluding: [])
+        return newItem
+    }
 
     /**
      Updates values in this book with those from the provided CKRecord. Values in this books which have a pending
