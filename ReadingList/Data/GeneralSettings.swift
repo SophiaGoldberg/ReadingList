@@ -1,4 +1,5 @@
 import ReadingList_Foundation
+import UIKit
 import PersistedPropertyWrapper
 
 struct GeneralSettings {
@@ -21,6 +22,9 @@ struct GeneralSettings {
 
     @Persisted("showAmazonLinks", defaultValue: true)
     static var showAmazonLinks: Bool
+
+    @Persisted("textSizeOverride")
+    static var textSize: UIContentSizeCategory?
 
     @available(iOS, obsoleted: 13.0)
     @Persisted("theme", defaultValue: .normal)

@@ -28,6 +28,43 @@ final class General: FormViewController {
                     GeneralSettings.showExpandedDescription = newValue
                 }
             }
+        
+        form +++ Section(header: "Text Size", footer: nil)
+            <<< SwitchRow {
+                $0.title = "Override System Size"
+                $0.value = GeneralSettings.textSize != nil
+                $0.onChange { row in
+                    guard let newValue = row.value else { return }
+                    if newValue {
+                        GeneralSettings.textSize = UIApplication.readingListApplication.systemPreferredContentSizeCategory
+                    } else {
+                        GeneralSettings.textSize = nil
+                    }
+                }
+            }
+            <<< SliderRow {
+                $0.title = "Text Size"
+                $0.shouldHideValue = true
+                $0.steps = UInt(UIContentSizeCategory.cases.count)
+                $0.cellSetup { cell, _ in
+                    cell.slider.minimumValue = Float(UIContentSizeCategory.cases.indices.first!)
+                    cell.slider.maximumValue = Float(UIContentSizeCategory.cases.indices.last!)
+                    cell.slider.isContinuous = false
+                }
+                $0.value = {
+                    guard let index = UIContentSizeCategory.cases.firstIndex(of: UIApplication.shared.preferredContentSizeCategory) else {
+                        return 0
+                    }
+                    return Float(index)
+                }()
+                $0.onChange { row in
+                    guard let newValue = row.value else { return }
+                    let newIndex = Int(newValue)
+                    let newSize = UIContentSizeCategory.cases[newIndex]
+                    GeneralSettings.textSize = newSize
+                    NotificationCenter.default.post(name: UIContentSizeCategory.didChangeNotification, object: nil, userInfo: [UIContentSizeCategory.newValueUserInfoKey: newSize])
+                }
+            }
 
         if #available(iOS 13.0, *) {} else {
             form.allSections[0] <<< ThemedPushRow<Theme> {
@@ -181,4 +218,16 @@ final class General: FormViewController {
 
 extension Notification.Name {
     static let ThemeSettingChanged = Notification.Name("theme-setting-changed")
+}
+
+extension UIContentSizeCategory {
+    static let cases: [UIContentSizeCategory] = [
+        .extraSmall,
+        .small,
+        .medium,
+        .large,
+        .extraLarge,
+        .extraExtraLarge,
+        .extraExtraExtraLarge
+    ]
 }
