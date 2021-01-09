@@ -90,10 +90,13 @@ final class Settings: UITableViewController {
         switch (indexPath.section, indexPath.row) {
         case (0, 1):
             UIApplication.shared.open(URL(string: "itms-apps://\(Settings.appStoreAddress)?action=write-review")!, options: [:])
+            tableView.deselectRow(at: indexPath, animated: true)
+        case (0, 2):
+            let readingListPro = UIHostingController(rootView: ReadingListPro()).inNavigationController()
+            self.splitViewController?.showDetailViewController(readingListPro, sender: self)
         default:
             return
         }
-        tableView.deselectRow(at: indexPath, animated: true)
     }
 }
 
