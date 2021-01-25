@@ -1,4 +1,5 @@
 import ReadingList_Foundation
+import UIKit
 import PersistedPropertyWrapper
 
 struct GeneralSettings {
@@ -24,4 +25,7 @@ struct GeneralSettings {
 
     @Persisted("darkModeOverride")
     static var darkModeOverride: Bool?
+
+    @Persisted("textSizeOverride")
+    static var textSizeOverride: UIContentSizeCategory?
 }

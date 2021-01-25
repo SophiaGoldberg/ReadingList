@@ -35,6 +35,10 @@ final class TabBarController: UITabBarController {
         NotificationCenter.default.addObserver(self, selector: #selector(configureTabIcons), name: UIApplication.backgroundRefreshStatusDidChangeNotification, object: nil)
     }
 
+    override var traitCollection: UITraitCollection {
+        UITraitCollection(traitsFrom: [super.traitCollection, UITraitCollection(preferredContentSizeCategory: ReadingListApplication.shared.preferredContentSizeCategory)])
+    }
+
     func getRootViewControllers() -> [UIViewController] {
         // The first two tabs of the tab bar controller are to the same storyboard. We cannot have different tab bar icons
         // if they are set up in storyboards, so we do them in code here, instead.
