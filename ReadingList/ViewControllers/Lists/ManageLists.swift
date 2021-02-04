@@ -17,7 +17,6 @@ final class ManageLists: UITableViewController {
         }
 
         updateCandidateListPresenceCache()
-        monitorThemeSetting()
     }
 
     private func updateCandidateListPresenceCache() {
@@ -45,14 +44,6 @@ final class ManageLists: UITableViewController {
         } else {
             return super.tableView(tableView, numberOfRowsInSection: section)
         }
-    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: GeneralSettings.theme)
-        }
-        return cell
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -90,8 +81,7 @@ final class ManageLists: UITableViewController {
             return !existingListNames.contains(listName)
         }
 
-        return TextBoxAlert(title: "Add New List", message: "Enter a name for your list", placeholder: "Enter list name",
-                            keyboardAppearance: GeneralSettings.theme.keyboardAppearance, textValidator: textValidator) { listName in
+        return TextBoxAlert(title: "Add New List", message: "Enter a name for your list", placeholder: "Enter list name", textValidator: textValidator) { listName in
             guard let listName = listName else { preconditionFailure() }
             let childContext = PersistentStoreManager.container.viewContext.childContext()
             let createdList = List(context: childContext, name: listName)

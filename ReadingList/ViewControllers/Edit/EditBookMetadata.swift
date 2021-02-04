@@ -147,11 +147,7 @@ final class EditBookMetadata: FormViewController {
                 $0.cellUpdate { [weak self] cell, _ in
                     guard let `self` = self else { return }
                     cell.textLabel!.textAlignment = .left
-                    if #available(iOS 13.0, *) {
-                        cell.textLabel!.textColor = .label
-                    } else {
-                        cell.textLabel!.textColor = GeneralSettings.theme.titleTextColor
-                    }
+                    cell.textLabel!.textColor = .label
                     cell.accessoryType = .disclosureIndicator
                     cell.detailTextLabel?.text = self.book.subjects.map { $0.name }.sorted().joined(separator: ", ")
                 }
@@ -250,8 +246,6 @@ final class EditBookMetadata: FormViewController {
 
         // Validate on start
         validateBook()
-
-        monitorThemeSetting()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -260,10 +254,8 @@ final class EditBookMetadata: FormViewController {
         // Prevent the default behaviour of allowing a swipe-down to dismiss the modal presentation. This would
         // not give a confirmation alert before discarding a user's unsaved changes. By handling the dismiss event
         // ourselves we can present a confirmation dialog.
-        if #available(iOS 13.0, *) {
-            isModalInPresentation = true
-            navigationController?.presentationController?.delegate = self
-        }
+        isModalInPresentation = true
+        navigationController?.presentationController?.delegate = self
     }
 
     func configureNavigationItem() {

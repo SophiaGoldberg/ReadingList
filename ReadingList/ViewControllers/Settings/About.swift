@@ -1,123 +1,215 @@
-import Foundation
+import SwiftUI
 import UIKit
+import WhatsNewKit
+import SafariServices
 import MessageUI
 
-final class About: UITableViewController {
+struct About: View {
+    let changeListProvider = ChangeListProvider()
+    @State var isShowingMailAlert = false
+    @State var isShowingMailView = false
+    @State var isShowingFaq = false
+    @EnvironmentObject var hostingSplitView: HostingSettingsSplitView
 
-    let thisVersionChangeList = ChangeListProvider().thisVersionChangeList()
-    let changeListRowIndex = 6
+    var body: some View {
+        SwiftUI.List {
+            Section(header: AboutHeader(), footer: AboutFooter()) {
+                IconCell("Website",
+                         imageName: "house.fill",
+                         backgroundColor: .blue,
+                         withChevron: true
+                ).presentingSafari(URL(string: "https://readinglist.app")!)
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        monitorThemeSetting()
-    }
+                IconCell("Share",
+                         imageName: "paperplane.fill",
+                         backgroundColor: .orange
+                ).modal(ActivityView(activityItems: [URL(string: "https://\(Settings.appStoreAddress)")!], applicationActivities: nil, excludedActivityTypes: nil))
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let rowCount = super.tableView(tableView, numberOfRowsInSection: section)
-        // We hide this (bottom) cell if we aren't showing a change list
-        if thisVersionChangeList == nil {
-            return rowCount - 1
-        } else {
-            return rowCount
-        }
-    }
+                IconCell("Twitter",
+                         image: TwitterIcon(),
+                         withChevron: true
+                ).presentingSafari(URL(string: "https://twitter.com/ReadingListApp")!)
 
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: GeneralSettings.theme)
-        }
-        if indexPath.section == 0 && indexPath.row == changeListRowIndex && thisVersionChangeList == nil {
-            cell.isHidden = true
-        }
-        return cell
-    }
+                IconCell("Email Developer",
+                         imageName: "envelope.fill",
+                         backgroundColor: .paleEmailBlue
+                ).onTapGesture {
+                    if #available(iOS 14.0, *) {
+                        isShowingMailAlert = true
+                    } else {
+                        // Action sheet anchors are messed up on iOS 13;
+                        // go straight to the Email view, skipping the sheet
+                        isShowingMailView = true
+                    }
+                }.actionSheet(isPresented: $isShowingMailAlert) {
+                    mailAlert
+                }.sheet(isPresented: $isShowingMailView) {
+                    mailView
+                }
 
-    override func tableView(_ tableView: UITableView, willDisplayFooterView view: UIView, forSection section: Int) {
-        guard let footer = view as? UITableViewHeaderFooterView else { assertionFailure("Unexpected footer view type"); return }
-        guard let textLabel = footer.textLabel else { assertionFailure("Missing text label"); return }
-        textLabel.textAlignment = .center
-        textLabel.font = .systemFont(ofSize: 11.0)
-        textLabel.text = "v\(BuildInfo.thisBuild.version) (\(BuildInfo.thisBuild.buildNumber))"
-    }
+                IconCell("Attributions",
+                         imageName: "heart.fill",
+                         backgroundColor: .green
+                         // Re-provide the environment object, otherwise we seem to get trouble
+                         // when the containing hosting VC gets removed from the window
+                ).navigating(to: Attributions().environmentObject(hostingSplitView))
 
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard indexPath.section == 0 else { return }
-        switch indexPath.row {
-        case 0: presentThemedSafariViewController(URL(string: "https://www.readinglist.app")!)
-        case 1: share(indexPath)
-        case 2: presentThemedSafariViewController(URL(string: "https://twitter.com/ReadingListApp")!)
-        case 3: contact(indexPath)
-        case 4: presentThemedSafariViewController(URL(string: "https://github.com/AndrewBennet/readinglist")!)
-        case changeListRowIndex:
-            if let thisVersionChangeList = thisVersionChangeList {
-                present(thisVersionChangeList, animated: true)
+                if changeListProvider.thisVersionChangeList() != nil {
+                    IconCell("Recent Changes",
+                             imageName: "wrench.fill",
+                             backgroundColor: .blue,
+                             withChevron: true
+                    ).modal(ChangeListWrapper())
+                }
             }
-        default: return
         }
-        tableView.deselectRow(at: indexPath, animated: true)
+        .possiblyInsetGroupedListStyle(inset: hostingSplitView.isSplit)
+        .navigationBarTitle("About")
     }
 
-    private func share(_ indexPath: IndexPath) {
-        let appStoreUrl = URL(string: "https://\(Settings.appStoreAddress)")!
-        let activityViewController = UIActivityViewController(activityItems: [appStoreUrl], applicationActivities: nil)
-        activityViewController.popoverPresentationController?.setSourceCell(atIndexPath: indexPath, inTable: tableView)
-        present(activityViewController, animated: true)
-    }
-
-    private func contact(_ indexPath: IndexPath) {
-        let canSendEmail = MFMailComposeViewController.canSendMail()
-
-        let controller = UIAlertController(title: "", message: """
-            Hi there 👋
-
-            To suggest features or report bugs, please email me. I try my best to \
-            reply to every email I receive, but this app is a one-person project, so \
-            please be patient if it takes a little time for my reply!
-
-            If you do have a specific question, I would suggest first looking on the FAQ \
-            in case your answer is there.
-            """, preferredStyle: .alert)
-        if canSendEmail {
-            controller.addAction(UIAlertAction(title: "Email", style: .default) { _ in
-                self.presentContactMailComposeWindow()
+    var mailAlert: ActionSheet {
+        let emailButton: ActionSheet.Button
+        if MFMailComposeViewController.canSendMail() {
+            emailButton = .default(Text("Email"), action: {
+                isShowingMailView = true
             })
         } else {
-            controller.addAction(UIAlertAction(title: "Copy Email Address", style: .default) { _ in
+            emailButton = .default(Text("Copy Email Address"), action: {
                 UIPasteboard.general.string = "feedback@readinglist.app"
             })
         }
-        controller.addAction(UIAlertAction(title: "Open FAQ", style: .default) { _ in
-            self.presentThemedSafariViewController(URL(string: "https://www.readinglist.app/faqs/")!)
-        })
-        controller.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        return ActionSheet(
+            title: Text(""),
+            message: Text("""
+         Hi there!
 
-        present(controller, animated: true)
+         To suggest features or report bugs, please email me. I try my best to \
+         reply to every email I receive, but this app is a one-person project, so \
+         please be patient if it takes a little time for my reply!
+
+         If you do have a specific question, I would suggest first looking on the FAQ \
+         in case your answer is there.
+         """),
+            buttons: [
+            emailButton,
+            .default(Text("Open FAQ"), action: {
+                isShowingFaq = true
+            }),
+            .cancel(Text("Dismiss"), action: {})
+            ]
+        )
     }
 
-    private func presentContactMailComposeWindow() {
-        let mailComposer = MFMailComposeViewController()
-        mailComposer.mailComposeDelegate = self
-        mailComposer.setToRecipients(["Reading List Developer <\(Settings.feedbackEmailAddress)>"])
-        mailComposer.setSubject("Reading List Feedback")
-        let messageBody = """
-        Your Message Here:
+    var mailView: MailView {
+        MailView(
+            isShowing: $isShowingMailView,
+            receipients: [
+                "Reading List Developer <\(Settings.feedbackEmailAddress)>"
+            ],
+            messageBody: """
+            Your Message Here:
 
 
 
 
-        Extra Info:
-        App Version: \(BuildInfo.thisBuild.fullDescription)
-        iOS Version: \(UIDevice.current.systemVersion)
-        Device: \(UIDevice.current.modelName)
-        """
-        mailComposer.setMessageBody(messageBody, isHTML: false)
-        present(mailComposer, animated: true)
+            Extra Info:
+            App Version: \(BuildInfo.thisBuild.fullDescription)
+            iOS Version: \(UIDevice.current.systemVersion)
+            Device: \(UIDevice.current.modelName)
+            """,
+            subject: "Reading List Feedback"
+        )
     }
 }
 
-extension About: MFMailComposeViewControllerDelegate {
-    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
-        dismiss(animated: true)
+struct AboutHeader: View {
+    var innerBody: some View {
+        (Text("Reading List ").bold() +
+        Text("""
+            is developed by single developer – me, Andrew 👋 I hope you are enjoying using the app 😊
+
+            If you value the app, please consider leaving a review, tweeting about it, sharing, or leaving a tip.
+
+            Happy Reading! 📚
+            """
+        )).font(.subheadline)
+        .foregroundColor(Color(.label))
+        .padding(.bottom, 20)
+        .padding(.top, 10)
+    }
+
+    var body: some View {
+        if #available(iOS 14.0, *) {
+            innerBody
+                .textCase(nil)
+                .padding(.horizontal, 12)
+        } else {
+            innerBody
+        }
+    }
+}
+
+struct AboutFooter: View {
+    static let numberFormatter: NumberFormatter = {
+        var formatter = NumberFormatter()
+        formatter.usesGroupingSeparator = false
+        return formatter
+    }()
+
+    var buildNumber = numberFormatter.string(from: BuildInfo.thisBuild.buildNumber as NSNumber) ?? "0"
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 4) {
+            Text("v\(BuildInfo.thisBuild.version.description) (\(buildNumber))")
+            Text("© Andrew Bennet 2021")
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .font(.caption)
+        .foregroundColor(Color(.label))
+        .padding(.top, 10)
+    }
+}
+
+extension Color {
+    static let twitterBlue = Color(
+        .sRGB,
+        red: 76 / 255,
+        green: 160 / 255,
+        blue: 235 / 255,
+        opacity: 1
+    )
+
+    static let paleEmailBlue = Color(
+        .sRGB,
+        red: 94 / 255,
+        green: 191 / 255,
+        blue: 244 / 255,
+        opacity: 1
+    )
+}
+
+fileprivate extension Image {
+    func iconTemplate() -> some View {
+        self.resizable()
+            .renderingMode(.template)
+            .foregroundColor(.white)
+    }
+}
+
+struct TwitterIcon: View {
+    var body: some View {
+        SettingsIcon(color: .twitterBlue) {
+            Image("twitter")
+                .iconTemplate()
+                .frame(width: 18, height: 18, alignment: .center)
+        }
+    }
+}
+
+struct About_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            About().environmentObject(HostingSettingsSplitView())
+        }
     }
 }

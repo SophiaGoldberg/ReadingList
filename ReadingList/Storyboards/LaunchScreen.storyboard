@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14868" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="wx6-4z-trQ">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="wx6-4z-trQ">
     <device id="ipad9_7" orientation="portrait" layout="fullscreen" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14824"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -19,7 +20,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="768" height="1024"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppIconRounded" translatesAutoresizingMaskIntoConstraints="NO" id="tIb-Gu-5Wk">
+                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppIcon_200_Rounded" translatesAutoresizingMaskIntoConstraints="NO" id="tIb-Gu-5Wk">
                                 <rect key="frame" x="284" y="412" width="200" height="200"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="tIb-Gu-5Wk" secondAttribute="height" multiplier="1:1" id="XUi-8F-wDU"/>
@@ -27,7 +28,7 @@
                                 </constraints>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
                             <constraint firstItem="tIb-Gu-5Wk" firstAttribute="centerX" secondItem="Bgo-Cu-cYT" secondAttribute="centerX" id="3Ym-Bc-0LS"/>
                             <constraint firstItem="tIb-Gu-5Wk" firstAttribute="centerY" secondItem="Bgo-Cu-cYT" secondAttribute="centerY" id="YNC-fs-LG2"/>
@@ -41,6 +42,9 @@
         </scene>
     </scenes>
     <resources>
-        <image name="AppIconRounded" width="180" height="180"/>
+        <image name="AppIcon_200_Rounded" width="200" height="200"/>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
     </resources>
 </document>

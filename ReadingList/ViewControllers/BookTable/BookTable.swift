@@ -8,7 +8,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
     // The read states that this book table initially shows books for, in order that they should appear
     var readStates: [BookReadState]!
 
-    private var dataSource: BookTableDataSourceCommon!
+    private var dataSource: BookTableDiffableDataSource!
     private var resultsControllers: [(readState: BookReadState, controller: NSFetchedResultsController<Book>)]!
     private var searchController: UISearchController!
     private var emptyStateManager: BookTableEmptyDataSourceManager!
@@ -53,14 +53,8 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
             self.dataSource.object(at: $0)
         }
 
-        // On iOS 13 we use Diffable Data Sources; on prior OSes we use the legacy data source which peforms more manual row interactions
-        if #available(iOS 13.0, *) {
-            dataSource = BookTableDiffableDataSource(tableView, controllers: resultsControllers.map(\.controller), sortManager: sortManager,
-                                                     searchController: searchController, onContentChanged: reconfigureNavigationBarAndSectionHeaders)
-        } else {
-            dataSource = BookTableLegacyDataSource(tableView, controllers: resultsControllers.map(\.controller), sortManager: sortManager,
-                                                   searchController: searchController, onContentChanged: reconfigureNavigationBarAndSectionHeaders)
-        }
+        dataSource = BookTableDiffableDataSource(tableView, controllers: resultsControllers.map(\.controller), sortManager: sortManager,
+                                                 searchController: searchController, onContentChanged: reconfigureNavigationBarAndSectionHeaders)
 
         // The empty data source manager is in charge of handling and reacting to the empty table state
         let emptyStateMode = BookTableEmptyDataSourceManager.mode(from: readStates)
@@ -74,7 +68,6 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         dataSource.updateData(animate: false)
         configureNavigationBarButtons()
 
-        monitorThemeSetting()
         super.viewDidLoad()
     }
 
@@ -131,14 +124,6 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         return readStatePredicate
     }
 
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-
-        if traitCollection.forceTouchCapability == .available {
-            registerForPreviewing(with: self, sourceView: tableView)
-        }
-    }
-
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard section < dataSource.sectionCount() else { return nil }
         let header = tableView.dequeue(BookTableHeader.self)
@@ -189,7 +174,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
             // If we're editing, the right button should become an "edit action" button, but be disabled until any books are selected
             leftButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(toggleEditingAnimated))
 
-            let rightButtonImage = UIImage(ifAvailable: ImageNames.navigationBarMore) ?? #imageLiteral(resourceName: "MoreFilledIcon")
+            let rightButtonImage = UIImage(systemName: ImageNames.navigationBarMore)
             if #available(iOS 14.0, *) {
                 rightButton = UIBarButtonItem(image: rightButtonImage, menu: buildEditAction().menu())
             } else {
@@ -211,14 +196,14 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
     }
 
     lazy var addButtonAction = AlertOrMenu(title: "Add New Book", items: [
-        AlertOrMenu.Item(title: "Scan Barcode", image: UIImage(ifAvailable: ImageNames.scanBarcode)) {
+        AlertOrMenu.Item(title: "Scan Barcode", image: UIImage(systemName: ImageNames.scanBarcode)) {
             self.present(UIStoryboard.ScanBarcode.rootAsFormSheet(), animated: true, completion: nil)
         },
-        AlertOrMenu.Item(title: "Search Online", image: UIImage(ifAvailable: ImageNames.searchOnline)) {
+        AlertOrMenu.Item(title: "Search Online", image: UIImage(systemName: ImageNames.searchOnline)) {
             self.present(UIStoryboard.SearchOnline.rootAsFormSheet(), animated: true, completion: nil)
         },
-        AlertOrMenu.Item(title: "Add Manually", image: UIImage(ifAvailable: ImageNames.addBookManually)) {
-            self.present(EditBookMetadata(bookToCreateReadState: .toRead).inThemedNavController(), animated: true, completion: nil)
+        AlertOrMenu.Item(title: "Add Manually", image: UIImage(systemName: ImageNames.addBookManually)) {
+            self.present(EditBookMetadata(bookToCreateReadState: .toRead).inNavigationController(), animated: true, completion: nil)
         }
     ])
 
@@ -252,22 +237,19 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         }
     }
 
-    @available(iOS 13.0, *)
     override func tableView(_ tableView: UITableView, didBeginMultipleSelectionInteractionAt indexPath: IndexPath) {
         // This enables the two-finger drag to select multiple books at once. When the interaction begins, ensure we are in edit mode
         // so that multiple rows can be selected.
         setEditing(true, animated: true)
     }
 
-    @available(iOS 13.0, *)
     override func tableView(_ tableView: UITableView, shouldBeginMultipleSelectionInteractionAt indexPath: IndexPath) -> Bool {
         return true
     }
 
-    @available(iOS 13.0, *)
     override func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         let book = dataSource.object(at: indexPath)
-        let previewProvider = { BookDetails.instantiate(withBook: book) }
+        let previewProvider = { BookDetailsHostingController(book) }
         return UIContextMenuConfiguration(identifier: book.objectID, previewProvider: previewProvider) { _ in
             // Fist set up the set of menu items which are always returned
             var menuItems: [UIMenuElement] = [
@@ -343,7 +325,6 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         }
     }
 
-    @available(iOS 13.0, *)
     override func tableView(_ tableView: UITableView, willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration, animator: UIContextMenuInteractionCommitAnimating) {
         guard let splitViewController = splitViewController else { preconditionFailure("Missing SplitViewController") }
         guard let previewVC = animator.previewViewController else { return }
@@ -352,11 +333,11 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
         // currently presented, we should just update the book on that controller. We don't expect the displayed controller - if
         // present - to be anything other than the BookDetails controller
         if splitViewController.detailIsPresented {
-            guard let objectId = configuration.identifier as? NSManagedObjectID, let bookDetailsVc = splitViewController.displayedDetailViewController as? BookDetails else {
+            guard let objectId = configuration.identifier as? NSManagedObjectID, let bookDetailsVc = splitViewController.displayedDetailViewController as? BookDetailsHostingController else {
                 return
             }
             let book = PersistentStoreManager.container.viewContext.object(with: objectId) as! Book
-            bookDetailsVc.book = book
+            bookDetailsVc.setBook(book)
 
             // To ensure that the relevant row is highlighted once the detail display is updated, find its index path and select the row
             if let indexPath = dataSource.indexPath(for: book) {
@@ -423,18 +404,18 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
             guard let selectedRows = self.tableView.indexPathsForSelectedRows, !selectedRows.isEmpty else { return [] }
             let selectedReadStates = selectedRows.map { self.dataSource.readState(forSection: $0.section) }.distinct()
 
-            var items = [AlertOrMenu.Item(title: "Manage Lists", image: UIImage(ifAvailable: ImageNames.manageLists)) {
+            var items = [AlertOrMenu.Item(title: "Manage Lists", image: UIImage(systemName: ImageNames.manageLists)) {
                 self.presentManageSelectedBooksLists()
             }]
             if let initialSelectionReadState = selectedReadStates.first, initialSelectionReadState != .finished, selectedReadStates.count == 1 {
                 let title = initialSelectionReadState == .toRead ? "Start Selected" : "Finish Selected"
-                let image = UIImage(ifAvailable: initialSelectionReadState == .toRead ? ImageNames.startBookPlay : ImageNames.finishBookCheckmark)
+                let image = UIImage(systemName: initialSelectionReadState == .toRead ? ImageNames.startBookPlay : ImageNames.finishBookCheckmark)
                 items.append(AlertOrMenu.Item(title: title, image: image) {
                     self.startOrFinishSelectedBooks(shouldStart: initialSelectionReadState == .toRead)
                 })
             }
             let confirmDelete = AlertOrMenu(title: nil, items: [
-                AlertOrMenu.Item(title: "Confirm Delete", image: UIImage(ifAvailable: ImageNames.delete), destructive: true) { [weak self] in
+                AlertOrMenu.Item(title: "Confirm Delete", image: UIImage(systemName: ImageNames.delete), destructive: true) { [weak self] in
                     guard let `self` = self else { return }
                     self.deleteBooks(indexPaths: selectedRows)
                     // Once the deletion has happened, switch editing mode off. Do this on the next run loop to avoid
@@ -444,7 +425,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
                     }
                 }
             ])
-            items.append(AlertOrMenu.Item(title: "Delete Selected", image: UIImage(ifAvailable: ImageNames.delete), destructive: true, childAlertOrMenu: confirmDelete) { [weak self] secondaryAlert in
+            items.append(AlertOrMenu.Item(title: "Delete Selected", image: UIImage(systemName: ImageNames.delete), destructive: true, childAlertOrMenu: confirmDelete) { [weak self] secondaryAlert in
                 secondaryAlert.popoverPresentationController?.barButtonItem = self?.navigationItem.rightBarButtonItem
                 self?.present(secondaryAlert, animated: true)
             })
@@ -481,7 +462,7 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
 
         // If there is a detail view presented, update the book
         if splitViewController.detailIsPresented {
-            (splitViewController.displayedDetailViewController as? BookDetails)?.book = book
+            (splitViewController.displayedDetailViewController as? BookDetailsHostingController)?.setBook(book)
         } else {
             // Segue to the details view, with the cell corresponding to the book as the sender.
             performSegue(withIdentifier: "showDetail", sender: book)
@@ -499,13 +480,13 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         guard let navController = segue.destination as? UINavigationController,
-            let detailsViewController = navController.topViewController as? BookDetails else { return }
+            let detailsViewController = navController.topViewController as? BookDetailsHostingController else { return }
 
         if let cell = sender as? UITableViewCell, let selectedIndex = tableView.indexPath(for: cell) {
-            detailsViewController.book = self.dataSource.object(at: selectedIndex)
+            detailsViewController.setBook(self.dataSource.object(at: selectedIndex))
         } else if let book = sender as? Book {
             // When a simulated selection triggers a segue, the sender is the Book
-            detailsViewController.book = book
+            detailsViewController.setBook(book)
         } else {
             assertionFailure("Unexpected sender type of segue to book details page")
         }
@@ -519,21 +500,13 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
     }
 
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let moreImage, deleteImage: UIImage
-        if #available(iOS 13.0, *) {
-            moreImage = UIImage(systemName: ImageNames.moreEllipsis)!
-            deleteImage = UIImage(systemName: ImageNames.delete)!
-        } else {
-            moreImage = #imageLiteral(resourceName: "More")
-            deleteImage = #imageLiteral(resourceName: "Trash")
-        }
         return UISwipeActionsConfiguration(performFirstActionWithFullSwipe: false, actions: [
-            UIContextualAction(style: .destructive, title: "Delete", image: deleteImage) { _, view, callback in
+            UIContextualAction(style: .destructive, title: "Delete", image: UIImage(systemName: ImageNames.delete)!) { _, view, callback in
                 let confirm = self.confirmDeleteAlert(indexPaths: [indexPath], callback: callback)
                 confirm.popoverPresentationController?.sourceView = view
                 self.present(confirm, animated: true, completion: nil)
             },
-            UIContextualAction(style: .normal, title: "More", image: moreImage) { _, view, callback in
+            UIContextualAction(style: .normal, title: "More", image: UIImage(systemName: ImageNames.moreEllipsis)!) { _, view, callback in
                 let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
                 alert.addAction(UIAlertAction(title: "Manage Lists", style: .default) { _ in
                     let book = self.dataSource.object(at: indexPath)
@@ -542,12 +515,12 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
                 })
                 alert.addAction(UIAlertAction(title: "Update Notes", style: .default) { _ in
                     let book = self.dataSource.object(at: indexPath)
-                    self.present(EditBookNotes(existingBookID: book.objectID).inThemedNavController(), animated: true)
+                    self.present(EditBookNotes(existingBookID: book.objectID).inNavigationController(), animated: true)
                     callback(true)
                 })
                 alert.addAction(UIAlertAction(title: "Edit Book", style: .default) { _ in
                     let book = self.dataSource.object(at: indexPath)
-                    self.present(EditBookMetadata(bookToEditID: book.objectID).inThemedNavController(), animated: true)
+                    self.present(EditBookMetadata(bookToEditID: book.objectID).inNavigationController(), animated: true)
                     callback(true)
                 })
                 alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
@@ -560,9 +533,9 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
     }
 
     override func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let logImage = UIImage(ifAvailable: ImageNames.manageLog) ?? #imageLiteral(resourceName: "Timetable")
+        let logImage = UIImage(systemName: ImageNames.manageLog)
         var actions = [UIContextualAction(style: .normal, title: "Log", image: logImage) { _, _, callback in
-            self.present(EditBookReadState(existingBookID: self.dataSource.object(at: indexPath).objectID).inThemedNavController(), animated: true)
+            self.present(EditBookReadState(existingBookID: self.dataSource.object(at: indexPath).objectID).inNavigationController(), animated: true)
             callback(true)
         }]
 
@@ -593,15 +566,13 @@ final class BookTable: UITableViewController { //swiftlint:disable:this type_bod
             // Workaround a strange iOS 13 quirk, where if a swipe leads to a new section appearing, setEditing(false) is not called.
             // This results in the table being unexpectedly in edit mode, and if the search conrtoller is active, it will be stuck:
             // unable to leave edit mode, and unable to select any table cells!
-            if #available(iOS 13.0, *) {
-                self.setEditing(false, animated: false)
-            }
+            self.setEditing(false, animated: false)
         }
-        leadingSwipeAction.backgroundColor = readStateOfSection == .toRead ? UIColor(.buttonBlue) : UIColor(.buttonGreen)
+        leadingSwipeAction.backgroundColor = readStateOfSection == .toRead ? .systemBlue : .systemGreen
         if readStateOfSection == .toRead {
-            leadingSwipeAction.image = UIImage(ifAvailable: ImageNames.startBookPlay) ?? #imageLiteral(resourceName: "Play")
+            leadingSwipeAction.image = UIImage(systemName: ImageNames.startBookPlay)
         } else {
-            leadingSwipeAction.image = UIImage(ifAvailable: ImageNames.finishBookCheckmark) ?? #imageLiteral(resourceName: "Complete")
+            leadingSwipeAction.image = UIImage(systemName: ImageNames.finishBookCheckmark)
         }
         actions.insert(leadingSwipeAction, at: 0)
 
@@ -692,23 +663,6 @@ extension BookTable: HeaderConfigurable {
         let bookCount = dataSource.rowCount(in: index)
         let readState = dataSource.readState(forSection: index)
         header.configure(readState: readState, bookCount: bookCount, enableSort: !isEditing && !searchController.isActive)
-    }
-}
-
-/// 3D touch responder for iOS 12 and below
-extension BookTable: UIViewControllerPreviewingDelegate {
-    func previewingContext(_ previewingContext: UIViewControllerPreviewing, viewControllerForLocation location: CGPoint) -> UIViewController? {
-        guard !tableView.isEditing else { return nil }
-        guard let indexPath = tableView.indexPathForRow(at: location), let cell = tableView.cellForRow(at: indexPath) else {
-            return nil
-        }
-
-        previewingContext.sourceRect = cell.frame
-        return BookDetails.instantiate(withBook: dataSource.object(at: indexPath))
-    }
-
-    func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController) {
-        show(viewControllerToCommit, sender: self)
     }
 }
 

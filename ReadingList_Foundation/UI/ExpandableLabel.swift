@@ -20,13 +20,9 @@ public class ExpandableLabel: UIView {
     }
 
     override public func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        if #available(iOS 13.0, *) {
-            if let previousTraitCollection = previousTraitCollection,
-                previousTraitCollection.hasDifferentColorAppearance(comparedTo: traitCollection) {
-                setupGradient()
-            }
-        } else {
-            // Fallback on earlier versions
+        if let previousTraitCollection = previousTraitCollection,
+            previousTraitCollection.hasDifferentColorAppearance(comparedTo: traitCollection) {
+            setupGradient()
         }
     }
 
@@ -38,23 +34,11 @@ public class ExpandableLabel: UIView {
         }
     }
 
-    @IBInspectable public var color: UIColor = {
-        if #available(iOS 13.0, *) {
-            return .label
-        } else {
-            return .black
-        }
-    }() {
+    @IBInspectable public var color: UIColor = .label {
         didSet { label.textColor = color }
     }
 
-    @IBInspectable public var gradientColor: UIColor = {
-        if #available(iOS 13.0, *) {
-            return .systemBackground
-        } else {
-            return .white
-        }
-    }() {
+    @IBInspectable public var gradientColor: UIColor = .systemBackground {
         didSet {
             if seeMore.backgroundColor != gradientColor {
                 seeMore.backgroundColor = gradientColor

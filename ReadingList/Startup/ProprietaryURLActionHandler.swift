@@ -99,7 +99,7 @@ struct ProprietaryURLActionHandler {
         let navController = tabBarController.selectedSplitViewController!.masterNavigationController
         navController.dismissAndPopToRoot()
 
-        let viewController = EditBookMetadata(bookToCreateReadState: .toRead).inThemedNavController()
+        let viewController = EditBookMetadata(bookToCreateReadState: .toRead).inNavigationController()
         navController.viewControllers.first!.present(viewController, animated: true, completion: nil)
     }
 }

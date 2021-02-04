@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097.3" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="R7D-Jc-uwA">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="R7D-Jc-uwA">
     <device id="ipad11_0rounded" orientation="portrait" layout="fullscreen" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="16087"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Themed Navigation Controller-->
+        <!--Navigation Controller-->
         <scene sceneID="CdG-zk-YXg">
             <objects>
-                <navigationController storyboardIdentifier="Navigation" id="R7D-Jc-uwA" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="Navigation" id="R7D-Jc-uwA" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="ZqJ-tU-PPu">
                         <rect key="frame" x="0.0" y="0.0" width="834" height="50"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -28,23 +29,24 @@
         <scene sceneID="pnL-8r-dkH">
             <objects>
                 <tableViewController storyboardIdentifier="ImportExport" title="Data" extendedLayoutIncludesOpaqueBars="YES" id="cE8-jq-0ch" customClass="ImportExport" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="insetGrouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" sectionFooterHeight="18" id="oBy-tm-xDQ">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="grouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" sectionFooterHeight="18" id="oBy-tm-xDQ">
                         <rect key="frame" x="0.0" y="0.0" width="834" height="1194"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <sections>
                             <tableViewSection headerTitle="Import &amp; Export" id="UcO-P8-j3q">
                                 <string key="footerTitle">Export to produce a CSV file which can be opened by most spreadsheet software.
 Import data from a CSV file, to move books between devices or services.</string>
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" textLabel="Qju-Ni-VDK" style="IBUITableViewCellStyleDefault" id="JVj-bo-1K2">
-                                        <rect key="frame" x="20" y="55.5" width="794" height="44"/>
+                                        <rect key="frame" x="0.0" y="55.5" width="834" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="JVj-bo-1K2" id="nTf-sn-HE4">
-                                            <rect key="frame" x="0.0" y="0.0" width="794" height="44"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="834" height="44"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Export to CSV" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" id="Qju-Ni-VDK">
-                                                    <rect key="frame" x="15" y="0.0" width="764" height="44"/>
+                                                    <rect key="frame" x="20" y="0.0" width="794" height="44"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <nil key="highlightedColor"/>
@@ -53,14 +55,14 @@ Import data from a CSV file, to move books between devices or services.</string>
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" textLabel="OTY-52-vzH" style="IBUITableViewCellStyleDefault" id="3l5-ie-WrC">
-                                        <rect key="frame" x="20" y="99.5" width="794" height="44"/>
+                                        <rect key="frame" x="0.0" y="99.5" width="834" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="3l5-ie-WrC" id="0Uf-eX-pTr">
-                                            <rect key="frame" x="0.0" y="0.0" width="768" height="44"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="803" height="44"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Import from CSV" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" id="OTY-52-vzH">
-                                                    <rect key="frame" x="15" y="0.0" width="745" height="44"/>
+                                                    <rect key="frame" x="20" y="0.0" width="775" height="44"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <nil key="textColor"/>
@@ -77,14 +79,14 @@ Import data from a CSV file, to move books between devices or services.</string>
                             <tableViewSection headerTitle="Delete" footerTitle="This will delete all books and lists from this device. This is not reversible!" id="Q3j-ra-yin">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" textLabel="3qq-0f-zF3" style="IBUITableViewCellStyleDefault" id="ffS-bL-b9r">
-                                        <rect key="frame" x="20" y="235" width="794" height="44"/>
+                                        <rect key="frame" x="0.0" y="235" width="834" height="44"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ffS-bL-b9r" id="RXT-Vi-A5P">
-                                            <rect key="frame" x="0.0" y="0.0" width="794" height="44"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="834" height="44"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Delete All" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" id="3qq-0f-zF3">
-                                                    <rect key="frame" x="15" y="0.0" width="764" height="44"/>
+                                                    <rect key="frame" x="20" y="0.0" width="794" height="44"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <color key="textColor" red="1" green="0.14913141730000001" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -111,45 +113,46 @@ Import data from a CSV file, to move books between devices or services.</string>
         <scene sceneID="Rva-Uc-17s">
             <objects>
                 <tableViewController storyboardIdentifier="Import" id="Ndc-vK-uV7" customClass="Import" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="insetGrouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" sectionFooterHeight="18" id="bt7-7T-1La">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="grouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" sectionFooterHeight="18" id="bt7-7T-1La">
                         <rect key="frame" x="0.0" y="0.0" width="834" height="1194"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <sections>
                             <tableViewSection headerTitle="Format" footerTitle="Choose the CSV file format to use when importing. Tap Format Details to see information about the requirements." id="cjB-z1-sOY">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" textLabel="g1g-Hd-hXL" detailTextLabel="2lx-7R-9nv" style="IBUITableViewCellStyleValue1" id="fFH-Mk-1ad">
-                                        <rect key="frame" x="20" y="55.5" width="794" height="43.5"/>
+                                        <rect key="frame" x="0.0" y="55.5" width="834" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="fFH-Mk-1ad" id="Mbu-KJ-0We">
-                                            <rect key="frame" x="0.0" y="0.0" width="794" height="43.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="834" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Import Format" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="g1g-Hd-hXL">
-                                                    <rect key="frame" x="15" y="12" width="109.5" height="20.5"/>
+                                                    <rect key="frame" x="20" y="12" width="109" height="20.5"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Reading List" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="2lx-7R-9nv">
-                                                    <rect key="frame" x="685" y="12" width="94" height="20.5"/>
+                                                    <rect key="frame" x="720.5" y="12" width="93.5" height="20.5"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
-                                                    <color key="textColor" systemColor="secondaryLabelColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+                                                    <color key="textColor" systemColor="secondaryLabelColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" textLabel="Fek-P7-OrD" style="IBUITableViewCellStyleDefault" id="OOC-1b-A2V">
-                                        <rect key="frame" x="20" y="99" width="794" height="43.5"/>
+                                        <rect key="frame" x="0.0" y="99" width="834" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="OOC-1b-A2V" id="yfG-aj-b5J">
-                                            <rect key="frame" x="0.0" y="0.0" width="768" height="43.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="803" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Format Details" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="Fek-P7-OrD">
-                                                    <rect key="frame" x="15" y="0.0" width="745" height="43.5"/>
+                                                    <rect key="frame" x="20" y="0.0" width="775" height="43.5"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <nil key="textColor"/>
@@ -164,20 +167,20 @@ Import data from a CSV file, to move books between devices or services.</string>
                                 <string key="footerTitle">For rows which include a Google Books ID, missing metadata or book covers can optionally be downloaded from the Internet during import from a Reading List format file.</string>
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" id="ORt-WG-d8v">
-                                        <rect key="frame" x="20" y="218" width="794" height="43.5"/>
+                                        <rect key="frame" x="0.0" y="218" width="834" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ORt-WG-d8v" id="qwn-WD-cqw">
-                                            <rect key="frame" x="0.0" y="0.0" width="794" height="43.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="834" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Cover Images" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1Do-ll-y3g">
-                                                    <rect key="frame" x="15" y="11.5" width="715" height="21"/>
+                                                    <rect key="frame" x="16" y="11.5" width="713" height="21"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8rQ-bI-gv7">
-                                                    <rect key="frame" x="730" y="6.5" width="51" height="31"/>
+                                                    <rect key="frame" x="729" y="6.5" width="51" height="31"/>
                                                     <connections>
                                                         <action selector="downloadCoversChanged:" destination="Ndc-vK-uV7" eventType="valueChanged" id="maQ-rg-2zB"/>
                                                     </connections>
@@ -193,20 +196,20 @@ Import data from a CSV file, to move books between devices or services.</string>
                                         </tableViewCellContentView>
                                     </tableViewCell>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" id="jN7-eX-m7y">
-                                        <rect key="frame" x="20" y="261.5" width="794" height="43.5"/>
+                                        <rect key="frame" x="0.0" y="261.5" width="834" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="jN7-eX-m7y" id="vxH-pK-hTW">
-                                            <rect key="frame" x="0.0" y="0.0" width="794" height="43.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="834" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Metadata" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wEv-10-uTh">
-                                                    <rect key="frame" x="15" y="11.5" width="715" height="21"/>
+                                                    <rect key="frame" x="16" y="11.5" width="713" height="21"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="kWf-ob-sGk">
-                                                    <rect key="frame" x="730" y="6.5" width="51" height="31"/>
+                                                    <rect key="frame" x="729" y="6.5" width="51" height="31"/>
                                                     <connections>
                                                         <action selector="downloadMetadataChanged:" destination="Ndc-vK-uV7" eventType="valueChanged" id="kbf-v3-ex2"/>
                                                     </connections>
@@ -227,20 +230,20 @@ Import data from a CSV file, to move books between devices or services.</string>
                                 <string key="footerTitle">Whether any matching books which are already in the app should be overwritten. If disabled, any rows which have an ISBN or Google Books ID corresponding to a book which already exists will be skipped. </string>
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" id="OgA-1I-R6I">
-                                        <rect key="frame" x="20" y="396.5" width="794" height="43.5"/>
+                                        <rect key="frame" x="0.0" y="396.5" width="834" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="OgA-1I-R6I" id="aer-d5-ZjK">
-                                            <rect key="frame" x="0.0" y="0.0" width="794" height="43.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="834" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Overwrite Existing Books" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="dLp-DO-YJV">
-                                                    <rect key="frame" x="15" y="11.5" width="715" height="21"/>
+                                                    <rect key="frame" x="16" y="11.5" width="713" height="21"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="x0W-Sn-kDf">
-                                                    <rect key="frame" x="730" y="6.5" width="51" height="31"/>
+                                                    <rect key="frame" x="729" y="6.5" width="51" height="31"/>
                                                     <connections>
                                                         <action selector="overwriteExistingBooksChanged:" destination="Ndc-vK-uV7" eventType="valueChanged" id="b9h-Ah-vYX"/>
                                                     </connections>
@@ -260,17 +263,17 @@ Import data from a CSV file, to move books between devices or services.</string>
                             <tableViewSection id="Eq4-J1-tOc">
                                 <cells>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" textLabel="B7a-yl-6br" style="IBUITableViewCellStyleDefault" id="h3t-fT-AEH">
-                                        <rect key="frame" x="20" y="504" width="794" height="43.5"/>
+                                        <rect key="frame" x="0.0" y="504" width="834" height="43.5"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="h3t-fT-AEH" id="IzB-m1-zRx">
-                                            <rect key="frame" x="0.0" y="0.0" width="794" height="43.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="834" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Select CSV File" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="B7a-yl-6br">
-                                                    <rect key="frame" x="15" y="0.0" width="764" height="43.5"/>
+                                                    <rect key="frame" x="20" y="0.0" width="794" height="43.5"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
-                                                    <color key="textColor" systemColor="systemBlueColor" red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                    <color key="textColor" systemColor="systemBlueColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
@@ -301,10 +304,10 @@ Import data from a CSV file, to move books between devices or services.</string>
             </objects>
             <point key="canvasLocation" x="4910" y="2666"/>
         </scene>
-        <!--Themed Navigation Controller-->
+        <!--Navigation Controller-->
         <scene sceneID="1bA-li-Ugo">
             <objects>
-                <navigationController id="pWY-UA-Us8" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <navigationController id="pWY-UA-Us8" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="vWr-ey-BA3">
                         <rect key="frame" x="0.0" y="0.0" width="540" height="56"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -344,7 +347,7 @@ Import data from a CSV file, to move books between devices or services.</string>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hPY-mo-VqA">
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hPY-mo-VqA">
                                                 <rect key="frame" x="237.5" y="398" width="65" height="30"/>
                                                 <state key="normal" title="More info"/>
                                                 <connections>
@@ -382,14 +385,14 @@ Import data from a CSV file, to move books between devices or services.</string>
                                 <viewLayoutGuide key="frameLayoutGuide" id="KZq-Ct-kY7"/>
                             </scrollView>
                         </subviews>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <viewLayoutGuide key="safeArea" id="qZ8-zo-gID"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="2bz-e1-hTQ" secondAttribute="trailing" id="0dO-JJ-fSh"/>
                             <constraint firstItem="2bz-e1-hTQ" firstAttribute="top" secondItem="wdC-9w-9En" secondAttribute="top" id="JLi-eU-Y5t"/>
                             <constraint firstItem="2bz-e1-hTQ" firstAttribute="leading" secondItem="wdC-9w-9En" secondAttribute="leading" id="X2J-VO-EJm"/>
                             <constraint firstAttribute="bottom" secondItem="2bz-e1-hTQ" secondAttribute="bottom" id="aY0-I7-5b3"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="qZ8-zo-gID"/>
                     </view>
                     <navigationItem key="navigationItem" id="NDz-ow-jB3">
                         <barButtonItem key="rightBarButtonItem" style="done" systemItem="done" id="mub-k0-7oJ">
@@ -398,10 +401,6 @@ Import data from a CSV file, to move books between devices or services.</string>
                             </connections>
                         </barButtonItem>
                     </navigationItem>
-                    <connections>
-                        <outletCollection property="labels" destination="PRS-i2-Kid" collectionClass="NSMutableArray" id="e9F-j6-LlE"/>
-                        <outletCollection property="labels" destination="vX4-WI-FxR" collectionClass="NSMutableArray" id="TCp-S9-CZc"/>
-                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="rSX-61-QoC" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -423,7 +422,7 @@ Import data from a CSV file, to move books between devices or services.</string>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Title" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="ibS-7c-DD7">
-                                            <rect key="frame" x="15" y="0.0" width="470" height="43.5"/>
+                                            <rect key="frame" x="16" y="0.0" width="468" height="43.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <fontDescription key="fontDescription" style="UICTFontTextStyleCallout"/>
                                             <nil key="textColor"/>
@@ -450,10 +449,10 @@ Import data from a CSV file, to move books between devices or services.</string>
             </objects>
             <point key="canvasLocation" x="7367" y="2958"/>
         </scene>
-        <!--Themed Navigation Controller-->
+        <!--Navigation Controller-->
         <scene sceneID="iRk-8U-6cv">
             <objects>
-                <navigationController id="Tmh-NX-jny" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <navigationController id="Tmh-NX-jny" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="j04-ii-Rlf">
                         <rect key="frame" x="0.0" y="0.0" width="540" height="56"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -493,7 +492,7 @@ Import data from a CSV file, to move books between devices or services.</string>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SSH-Ls-l79">
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SSH-Ls-l79">
                                                 <rect key="frame" x="226" y="276.5" width="88" height="30"/>
                                                 <state key="normal" title="See columns"/>
                                                 <connections>
@@ -529,14 +528,14 @@ Import data from a CSV file, to move books between devices or services.</string>
                                 <viewLayoutGuide key="frameLayoutGuide" id="CKn-qq-JTW"/>
                             </scrollView>
                         </subviews>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <viewLayoutGuide key="safeArea" id="ATU-k6-8gZ"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="pmk-z3-M0G" secondAttribute="trailing" id="BKC-LB-kek"/>
                             <constraint firstItem="pmk-z3-M0G" firstAttribute="leading" secondItem="2IC-9I-a5o" secondAttribute="leading" id="YdY-Le-FKD"/>
                             <constraint firstAttribute="bottom" secondItem="pmk-z3-M0G" secondAttribute="bottom" id="YrR-Nc-HKK"/>
                             <constraint firstItem="pmk-z3-M0G" firstAttribute="top" secondItem="2IC-9I-a5o" secondAttribute="top" id="pxM-jS-V5y"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="ATU-k6-8gZ"/>
                     </view>
                     <navigationItem key="navigationItem" id="4NP-gR-Dhn">
                         <barButtonItem key="rightBarButtonItem" style="done" systemItem="done" id="qJ1-7V-TQJ">
@@ -545,14 +544,21 @@ Import data from a CSV file, to move books between devices or services.</string>
                             </connections>
                         </barButtonItem>
                     </navigationItem>
-                    <connections>
-                        <outletCollection property="labels" destination="vbb-4G-JHo" collectionClass="NSMutableArray" id="j6f-eI-av0"/>
-                        <outletCollection property="labels" destination="pZs-3b-uNx" collectionClass="NSMutableArray" id="P6a-JV-zyX"/>
-                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkU-jr-8vp" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="6593" y="2958"/>
         </scene>
     </scenes>
+    <resources>
+        <systemColor name="secondaryLabelColor">
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+        <systemColor name="systemBlueColor">
+            <color red="0.0" green="0.47843137254901963" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+    </resources>
 </document>

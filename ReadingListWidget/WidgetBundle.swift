@@ -50,6 +50,6 @@ struct ReadingListWidget_Previews: PreviewProvider {
                 .previewContext(WidgetPreviewContext(family: .systemSmall))
             AddBooksView()
                 .previewContext(WidgetPreviewContext(family: .systemMedium))
-        }.background(Color(.secondarySystemBackground))
+        }
     }
 }

@@ -47,7 +47,6 @@ final class Import: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        monitorThemeSetting()
         navigationItem.title = "Import From CSV"
         refreshUI()
     }
@@ -69,17 +68,6 @@ final class Import: UITableViewController {
         if preProvidedImportFile != nil {
             selectCsvFileCellLabel.text = "Import"
         }
-    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: GeneralSettings.theme)
-            if let label = cell.contentView.subviews.compactMap({ $0 as? UILabel }).first {
-                label.textColor = indexPath == selectFileCellIndex ? .systemBlue : GeneralSettings.theme.titleTextColor
-            }
-        }
-        return cell
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {

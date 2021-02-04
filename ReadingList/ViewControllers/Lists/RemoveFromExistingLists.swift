@@ -17,7 +17,6 @@ final class RemoveFromExistingLists: UITableViewController {
         try! resultsController.performFetch()
 
         setEditing(true, animated: false)
-        monitorThemeSetting()
     }
 
     @IBAction private func doneTapped(_ sender: Any) {
@@ -34,10 +33,6 @@ final class RemoveFromExistingLists: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ExistingListCell", for: indexPath)
-        if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: GeneralSettings.theme)
-        }
-
         let list = resultsController.object(at: indexPath)
         cell.textLabel!.text = list.name
         cell.detailTextLabel!.text = "\(list.items.count) book\(list.items.count == 1 ? "" : "s")"

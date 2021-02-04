@@ -11,6 +11,13 @@ struct ChangeListProvider {
     )
 
     let changeLog = [
+        Version(major: 1, minor: 16, patch: 0): [
+            WhatsNew.Item(
+                title: "iCloud Backup",
+                subtitle: "Automatic back up to iCloud, to keep your data safe and secure",
+                image: UIImage(largeSystemImageNamed: "icloud.fill")
+            )
+        ],
         Version(major: 1, minor: 14, patch: 0): [
             WhatsNew.Item(
                 title: "Homescreen Widgets",
@@ -42,7 +49,7 @@ struct ChangeListProvider {
         ]
     ]
 
-    func thisVersionChangeList() -> UIViewController? {
+    func thisVersionChangeList() -> WhatsNewViewController? {
         let thisVersion = BuildInfo.thisBuild.version
         let itemsToPresent = changeLog[thisVersion] ?? changeLog.filter {
             // Get the versions which match this major and minor version...
@@ -78,11 +85,6 @@ struct ChangeListProvider {
 
         var configuration = WhatsNewViewController.Configuration()
         configuration.itemsView.imageSize = .fixed(height: 40)
-        if #available(iOS 13.0, *) { } else {
-            if GeneralSettings.theme.isDark {
-                configuration.apply(theme: .darkBlue)
-            }
-        }
         if let startIndex = title.startIndex(ofFirstSubstring: coloredTitlePortion) {
             configuration.titleView.secondaryColor = .init(startIndex: startIndex, length: coloredTitlePortion.count, color: .systemBlue)
         } else {

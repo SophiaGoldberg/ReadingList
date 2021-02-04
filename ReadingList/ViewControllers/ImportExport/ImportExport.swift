@@ -8,22 +8,6 @@ final class ImportExport: UITableViewController {
 
     private let deleteAllDataIndex = IndexPath(row: 0, section: 1)
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        monitorThemeSetting()
-    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        if #available(iOS 13.0, *) { return cell }
-        // Cannot use the default initialise since it turns the button text a plain colour
-        let theme = GeneralSettings.theme
-        cell.backgroundColor = theme.cellBackgroundColor
-        cell.setSelectedBackgroundColor(theme.selectedCellBackgroundColor)
-        cell.textLabel?.textColor = indexPath == deleteAllDataIndex ? .systemRed : theme.titleTextColor
-        return cell
-    }
-
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         switch indexPath {
         case IndexPath(row: 0, section: 0): exportData(presentingIndexPath: indexPath)
@@ -80,7 +64,7 @@ final class ImportExport: UITableViewController {
         // The CONFIRM DELETE action:
         let confirmDelete = UIAlertController(title: "Final Warning", message: "This action is irreversible. Are you sure you want to continue?", preferredStyle: .alert)
         confirmDelete.addAction(UIAlertAction(title: "Delete", style: .destructive) { _ in
-            PersistentStoreManager.deleteAll()
+            DeleteAllManager.shared.deleteAll()
             UserEngagement.logEvent(.deleteAllData)
         })
         confirmDelete.addAction(UIAlertAction(title: "Cancel", style: .cancel))

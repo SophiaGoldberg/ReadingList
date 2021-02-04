@@ -28,9 +28,7 @@ public class EmptyStateView: UIView {
         title.text = "Title"
         title.textAlignment = .center
         title.font = .preferredFont(forTextStyle: .title1)
-        if #available(iOS 13.0, *) {
-            title.textColor = .label
-        }
+        title.textColor = .label
         title.translatesAutoresizingMaskIntoConstraints = false
         addSubview(title)
 
@@ -38,9 +36,7 @@ public class EmptyStateView: UIView {
         text.text = "Text"
         text.textAlignment = .center
         text.font = .preferredFont(forTextStyle: .body)
-        if #available(iOS 13.0, *) {
-            text.textColor = .secondaryLabel
-        }
+        text.textColor = .secondaryLabel
         text.translatesAutoresizingMaskIntoConstraints = false
         text.numberOfLines = 0
         addSubview(text)

@@ -13,12 +13,6 @@ final class ListBookTable: UITableViewController {
     private var dataSource: ListBookDataSource!
     private var emptyStateManager: ListBookTableEmptyDataSetManager!
 
-    /// Used to work around a animation bug, which is resolved in iOS 13, by forcing the search bar into a visible state.
-    @available(iOS, obsoleted: 13.0)
-    var showSearchBarOnAppearance: Bool = false {
-        didSet { navigationItem.hidesSearchBarWhenScrolling = !showSearchBarOnAppearance }
-    }
-
     private var listNameField: UITextField? {
         get { return navigationItem.titleView as? UITextField }
         set { navigationItem.titleView = newValue }
@@ -52,11 +46,7 @@ final class ListBookTable: UITableViewController {
         searchController.delegate = self
         navigationItem.searchController = searchController
 
-        if #available(iOS 13.0, *) {
-            dataSource = ListBookDiffableDataSource(tableView, list: list, controller: buildResultsControllerAndFetch(), searchController: searchController, onContentChanged: reloadHeaders)
-        } else {
-            dataSource = ListBookLegacyDataSource(tableView, list: list, controller: buildResultsControllerAndFetch(), searchController: searchController, onContentChanged: reloadHeaders)
-        }
+        dataSource = ListBookDiffableDataSource(tableView, list: list, controller: buildResultsControllerAndFetch(), searchController: searchController, onContentChanged: reloadHeaders)
 
         // Configure the empty state manager to detect when the table becomes empty
         emptyStateManager = ListBookTableEmptyDataSetManager(tableView: tableView, navigationBar: navigationController?.navigationBar, navigationItem: navigationItem, searchController: searchController, list: list)
@@ -66,7 +56,6 @@ final class ListBookTable: UITableViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(objectContextChanged(_:)),
                                                name: .NSManagedObjectContextObjectsDidChange,
                                                object: PersistentStoreManager.container.viewContext)
-        monitorThemeSetting()
     }
 
     private func buildResultsControllerAndFetch() -> NSFetchedResultsController<ListItem> {
@@ -84,35 +73,11 @@ final class ListBookTable: UITableViewController {
         return controller
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-
-        // Ensure that hidesSearchBarWhenScrolling is always true when the view appears.
-        // Works in conjunction with showSearchBarOnAppearance. That only exists to work around
-        // a bug which is resolved in iOS 13.
-        if #available(iOS 13.0, *) { /* issue is fixed */ } else {
-            navigationItem.hidesSearchBarWhenScrolling = true
-        }
-    }
-
-    override func initialise(withTheme theme: Theme) {
-        if #available(iOS 13.0, *) { return }
-        super.initialise(withTheme: theme)
-        if let listNameField = listNameField {
-            listNameField.textColor = theme.titleTextColor
-        }
-    }
-
     private func listTextField(for navigationBar: UINavigationBar) -> UITextField {
         let textField = UITextField(frame: navigationBar.frame.inset(by: UIEdgeInsets(top: 0, left: 115, bottom: 0, right: 115)))
         textField.text = listNameFieldDefaultText
         textField.textAlignment = .center
         textField.font = UIFont.systemFont(ofSize: 17.0, weight: .semibold)
-        if #available(iOS 13.0, *) { } else {
-            let theme = GeneralSettings.theme
-            textField.textColor = theme.titleTextColor
-            textField.keyboardAppearance = theme.keyboardAppearance
-        }
         textField.enablesReturnKeyAutomatically = true
         textField.returnKeyType = .done
         textField.delegate = self
@@ -243,10 +208,10 @@ final class ListBookTable: UITableViewController {
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let detailsViewController = (segue.destination as? UINavigationController)?.topViewController as? BookDetails {
+        if let detailsViewController = (segue.destination as? UINavigationController)?.topViewController as? BookDetailsHostingController {
             guard let senderIndex = sender as? IndexPath else { preconditionFailure() }
             let book = dataSource.getBook(at: senderIndex)
-            detailsViewController.book = book
+            detailsViewController.setBook(book)
         }
     }
 }

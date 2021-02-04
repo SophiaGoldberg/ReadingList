@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="15505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="rYQ-41-cfc">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17156" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="rYQ-41-cfc">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15509"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17126"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -27,6 +28,7 @@
                                 </constraints>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="bpp-e0-H2Y"/>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="VIt-na-l7a" secondAttribute="trailing" id="Ifn-HB-v19"/>
@@ -37,12 +39,11 @@
                             <constraint firstItem="710-zJ-iLP" firstAttribute="width" secondItem="VIt-na-l7a" secondAttribute="width" multiplier="3:4" id="vJw-tw-9FO"/>
                             <constraint firstItem="VIt-na-l7a" firstAttribute="top" secondItem="Li1-Bc-Q61" secondAttribute="top" id="wv6-dE-OPd"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="bpp-e0-H2Y"/>
                     </view>
                     <tabBarItem key="tabBarItem" title="Item" id="C92-un-dfo"/>
                     <toolbarItems>
                         <barButtonItem title=" Scan Many " id="qo7-cK-IeZ" customClass="TogglableUIBarButtonItem" customModule="ReadingList_Foundation">
-                            <color key="tintColor" systemColor="systemBlueColor" red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <color key="tintColor" systemColor="systemBlueColor"/>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="7wO-mK-uZ1"/>
                         <barButtonItem enabled="NO" title="Review Books" style="done" id="8Pl-ki-4Te">
@@ -76,10 +77,10 @@
             </objects>
             <point key="canvasLocation" x="-1471.2" y="-393.55322338830587"/>
         </scene>
-        <!--Themed Navigation Controller-->
+        <!--Navigation Controller-->
         <scene sceneID="YJu-cP-9jM">
             <objects>
-                <navigationController id="rYQ-41-cfc" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <navigationController id="rYQ-41-cfc" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="rHe-eY-Zk8">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -95,5 +96,8 @@
     </scenes>
     <resources>
         <image name="Torch" width="25" height="25"/>
+        <systemColor name="systemBlueColor">
+            <color red="0.0" green="0.47843137254901963" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
     </resources>
 </document>

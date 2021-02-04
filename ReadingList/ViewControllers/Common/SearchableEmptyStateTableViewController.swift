@@ -12,9 +12,9 @@ class UITableViewSearchableEmptyStateManager: UITableViewEmptyStateManager {
     let initialLargeTitleDisplayMode: UINavigationItem.LargeTitleDisplayMode
     let initialPrefersLargeTitles: Bool
 
-    let emptyStateTitleFont = UIFont.gillSans(forTextStyle: .title1)
-    let emptyStateDescriptionFont = UIFont.gillSans(forTextStyle: .title2)
-    let emptyStateDescriptionBoldFont = UIFont.gillSansSemiBold(forTextStyle: .title2)
+    let emptyStateTitleFont = UIFont.systemFont(ofSize: 30, weight: .medium)
+    let emptyStateDescriptionFont = UIFont.rounded(ofSize: 20, weight: .regular)
+    let emptyStateDescriptionBoldFont = UIFont.rounded(ofSize: 20, weight: .semibold)
 
     init(_ tableView: UITableView, navigationBar: UINavigationBar?, navigationItem: UINavigationItem, searchController: UISearchController) {
         self.searchController = searchController
@@ -23,15 +23,6 @@ class UITableViewSearchableEmptyStateManager: UITableViewEmptyStateManager {
         self.initialLargeTitleDisplayMode = navigationItem.largeTitleDisplayMode
         self.initialPrefersLargeTitles = navigationBar?.prefersLargeTitles ?? false
         super.init(tableView)
-
-        if #available(iOS 13.0, *) { } else {
-            NotificationCenter.default.addObserver(self, selector: #selector(themeSettingDidChange), name: .ThemeSettingChanged, object: nil)
-        }
-    }
-
-    @available(iOS, obsoleted: 13.0)
-    @objc private func themeSettingDidChange() {
-        reloadEmptyStateView()
     }
 
     override func emptyStateDidChange() {
@@ -49,14 +40,6 @@ class UITableViewSearchableEmptyStateManager: UITableViewEmptyStateManager {
         }
     }
 
-    private func attributeWithThemeColor(_ attributedString: NSAttributedString, color: @autoclosure () -> UIColor) -> NSAttributedString {
-        if #available(iOS 13.0, *) {
-            return attributedString
-        } else {
-            return attributedString.mutable().attributedWithColor(color())
-        }
-    }
-
     final override func titleForEmptyState() -> NSAttributedString {
         let title: NSAttributedString
         if searchController.hasActiveSearchTerms {
@@ -65,7 +48,7 @@ class UITableViewSearchableEmptyStateManager: UITableViewEmptyStateManager {
             title = titleForNonSearchEmptyState().attributedWithFont(emptyStateTitleFont)
         }
 
-        return attributeWithThemeColor(title, color: GeneralSettings.theme.titleTextColor)
+        return title
     }
 
     final override func textForEmptyState() -> NSAttributedString {
@@ -76,7 +59,7 @@ class UITableViewSearchableEmptyStateManager: UITableViewEmptyStateManager {
             text = textForNonSearchEmptyState()
         }
 
-        return attributeWithThemeColor(text, color: GeneralSettings.theme.subtitleTextColor)
+        return text
     }
 
     final override func positionForEmptyState() -> EmptyStatePosition {

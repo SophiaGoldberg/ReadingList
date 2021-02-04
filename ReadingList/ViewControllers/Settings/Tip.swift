@@ -1,104 +1,220 @@
+import SwiftUI
 import SwiftyStoreKit
 import StoreKit
 
-final class Tip: UIViewController, ThemeableViewController {
-    let tipProductIds = ["smalltip", "mediumtip", "largetip", "verylargetip", "gianttip"]
-    var tipProducts: Set<SKProduct>?
+enum PurchaseState {
+    case none
+    case pending
+    case completed
+}
 
-    @IBOutlet private weak var explanationLabel: UILabel!
-    @IBOutlet private var tipButtons: [UIButton]!
+enum TipProduct: String, CaseIterable {
+    case small = "smalltip"
+    case medium = "mediumtip"
+    case large = "largetip"
+    case verylarge = "verylargetip"
+    case giant = "gianttip"
+}
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        SwiftyStoreKit.retrieveProductsInfo(Set(tipProductIds)) { [weak self] results in
-            guard let viewController = self else { return }
-            guard results.retrievedProducts.count == viewController.tipProductIds.count else {
-                viewController.tipButtons[1].isEnabled = false
-                viewController.tipButtons[1].setTitle("Not available", for: .normal)
-                return
+struct Tip: View {
+    @State var purchaseState = PurchaseState.none
+
+    var body: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            HStack {
+                Spacer()
+                TipViewContent(purchaseState: $purchaseState)
+                    .padding(20)
+                    .frame(maxWidth: 600)
+                Spacer()
             }
-            viewController.tipProducts = results.retrievedProducts
-            viewController.displayTipPrices()
         }
+        .navigationBarTitle("Tip")
+    }
+}
 
-        if BuildInfo.thisBuild.type != .appStore {
-            explanationLabel.text = explanationLabel.text! + "\n\nNote: because you are testing a beta version of this app, you won't be able to leave any tips."
-        }
+struct TipViewContent: View {
+    @Binding var purchaseState: PurchaseState
 
-        monitorThemeSetting()
+    var thanksForSupporting: some View {
+        Text("Thank you for supporting Reading List!\n❤️")
+            .font(.system(.title))
+            .fontWeight(.semibold)
+            .lineLimit(nil)
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        view.setNeedsLayout()
+    var blurbFromDeveloper: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Hi there 👋")
+                .font(.title)
+                .fontWeight(.semibold)
+                .frame(maxWidth: .infinity)
+            Text("""
+                I'm Andrew, the developer of Reading List. I hope you're enjoying the app!
+
+                Reading List is developed and supported by a single developer. If you value \
+                using this app and are feeling generous, you can contribute towards its \
+                development if you are able to. If not, that's fine too!
+
+                Thanks for reading,
+                Andrew
+                """
+            ).font(.callout)
+
+            TipPurchasesSection(purchaseState: $purchaseState)
+                .frame(maxWidth: .infinity)
+
+            if BuildInfo.thisBuild.type != .appStore {
+                Text("""
+                    Note: because you are testing a beta version of this app, you won't be charged \
+                    for any tips. If you would like to tip, you will need to install the App Store build.
+                    """
+                ).font(.caption)
+                .multilineTextAlignment(.center)
+            }
+        }
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
+    var body: some View {
+        if purchaseState == .completed {
+            thanksForSupporting
+        } else {
+            blurbFromDeveloper
+        }
+    }
+}
 
-        let scrollView = view.subviews[0] as! UIScrollView
-        let contentView = scrollView.subviews[0]
+struct TipPurchasesSection: View {
+    @State var productLoadState = ProductLoadState.loading
+    @Binding var purchaseState: PurchaseState
 
-        let top = (scrollView.bounds.height - contentView.bounds.height) / 2
-        scrollView.contentInset = UIEdgeInsets(top: top < 0 ? 0 : top, left: 0, bottom: 0, right: 0)
+    enum ProductLoadState {
+        case loading
+        case notAvailable
+        case loaded(Set<SKProduct>)
     }
 
-    func displayTipPrices() {
-        guard let tipProducts = tipProducts else {
-            assertionFailure("TipProducts was unexpectedly nil"); return
+    var body: some View {
+        Group {
+            switch productLoadState {
+            case .notAvailable:
+                Text("Could not load tips")
+                    .font(.callout)
+            case .loading:
+                ProgressSpinnerView(isAnimating: .constant(true), style: .medium)
+            case .loaded(let products):
+                TipPurchases(products, purchaseState: $purchaseState)
+            }
+        }.onAppear {
+            SwiftyStoreKit.retrieveProductsInfo(Set(TipProduct.allCases.map(\.rawValue))) { results in
+                guard results.retrievedProducts.count == TipProduct.allCases.count else {
+                    productLoadState = .notAvailable
+                    return
+                }
+                productLoadState = .loaded(results.retrievedProducts)
+            }
         }
-        guard let firstProduct = tipProducts.first else {
-            assertionFailure("TipProducts was unexpectedly empty"); return
-        }
+    }
+}
 
+struct TipPurchases: View {
+    init(_ products: Set<SKProduct>, purchaseState: Binding<PurchaseState>) {
+        self.products = products
+        self.productsById = products.reduce([:]) { dictionary, product in
+            guard let tipProduct = TipProduct(rawValue: product.productIdentifier) else { return dictionary }
+            var dictionary = dictionary
+            dictionary[tipProduct] = product
+            return dictionary
+        }
+        self._purchaseState = purchaseState
+    }
+
+    let products: Set<SKProduct>
+    let productsById: [TipProduct: SKProduct]
+    @Binding var purchaseState: PurchaseState
+
+    func productView(_ id: TipProduct) -> TipButtonView {
+        TipButtonView(productsById[id]!) { purchaseState = $0 }
+    }
+
+    private let buttonSpacing: CGFloat = 24
+
+    var body: some View {
+        if purchaseState == .pending {
+            ProgressSpinnerView(isAnimating: .constant(true), style: .medium)
+        } else {
+            VStack(alignment: .center, spacing: buttonSpacing) {
+                HStack(alignment: .center, spacing: buttonSpacing) {
+                    productView(.small)
+                    productView(.medium)
+                    productView(.large)
+                }
+                HStack(alignment: .center, spacing: buttonSpacing) {
+                    productView(.verylarge)
+                    productView(.giant)
+                }
+            }
+        }
+    }
+}
+
+struct TipButtonView: View {
+    let product: SKProduct
+    let didPurchase: (PurchaseState) -> Void
+    let price: String
+    @State var showingFailedPurchaseAlert = false
+
+    init(_ product: SKProduct, didPurchase: @escaping (PurchaseState) -> Void) {
+        self.product = product
         let priceFormatter = NumberFormatter()
         priceFormatter.formatterBehavior = .behavior10_4
         priceFormatter.numberStyle = .currency
-        priceFormatter.locale = firstProduct.priceLocale
-
-        for (index, productId) in tipProductIds.enumerated() {
-            guard let product = tipProducts.first(where: { $0.productIdentifier == productId }) else {
-                assertionFailure("No product with ID \(productId)"); continue
-            }
-            guard let priceString = priceFormatter.string(from: product.price) else {
-                assertionFailure("Could not format price string \(product.price)"); continue
-            }
-
-            let button = tipButtons[index]
-            button.isHidden = false
-            button.isEnabled = true
-            button.setTitle(priceString, for: .normal)
-        }
+        priceFormatter.locale = product.priceLocale
+        self.price = priceFormatter.string(from: product.price)!
+        self.didPurchase = didPurchase
     }
 
-    @IBAction private func tipPressed(_ sender: UIButton) {
-        guard let tipProducts = tipProducts else { return }
+    var body: some View {
+        Button(action: {
+            // Make the purchase when tapped
+            purchase()
+        }, label: {
+            Text(price)
+                .fontWeight(.semibold)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(Color(.systemBlue))
+                .cornerRadius(18)
+                .foregroundColor(.white)
+        }).alert(isPresented: $showingFailedPurchaseAlert) {
+            Alert(
+                title: Text("Tip Failed"),
+                message: Text("Something went wrong - thanks for trying though!"),
+                dismissButton: .default(Text("OK")) {
+                    showingFailedPurchaseAlert = false
+                }
+            )
+                }
+    }
 
-        let senderIndex = tipButtons.firstIndex(of: sender)!
-        let productId = tipProductIds[senderIndex]
-        let product = tipProducts.first { $0.productIdentifier == productId }!
-
-        SwiftyStoreKit.purchaseProduct(product) { [weak self] result in
+    func purchase() {
+        didPurchase(.pending)
+        SwiftyStoreKit.purchaseProduct(product) { result in
             switch result {
             case .success:
-                guard let viewController = self else { return }
-                viewController.explanationLabel.text = "Thanks for supporting Reading List! ❤️"
-                viewController.tipButtons.forEach { $0.isHidden = true }
                 LightweightDataStore.hasEverTipped = true
-
+                didPurchase(.completed)
             case .error(let error):
+                didPurchase(.none)
                 guard error.code != .paymentCancelled else { return }
-
-                let alert = UIAlertController(title: "Tip Failed", message: "Something went wrong - thanks for trying though!", preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default))
-                (UIApplication.shared.delegate as! AppDelegate).window?.rootViewController?.present(alert, animated: true)
+                showingFailedPurchaseAlert = true
             }
         }
     }
+}
 
-    func initialise(withTheme theme: Theme) {
-        if #available(iOS 13.0, *) { return }
-        view.backgroundColor = theme.viewBackgroundColor
-        explanationLabel.textColor = theme.titleTextColor
+struct Tip_Previews: PreviewProvider {
+    static var previews: some View {
+        Tip()
     }
 }

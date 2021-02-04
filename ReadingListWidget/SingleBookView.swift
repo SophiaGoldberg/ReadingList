@@ -76,7 +76,6 @@ struct SingleBookView: View {
             // bump the view up a little bit
             .offset(x: 0, y: book.percentageComplete == nil && book.startDate == nil && book.finishDate == nil ? -8 : 0)
             .frame(maxHeight: .infinity, alignment: .center)
-            .background(Color(.secondarySystemBackground))
             .widgetURL(for: book.percentageComplete == nil ? .viewBook(id: book.id) : .editBookReadLog(id: book.id))
         }
     }
@@ -98,6 +97,6 @@ struct SingleBook_Previews: PreviewProvider {
                 SingleBookView(book: $0, entryDate: Date())
                     .previewContext(WidgetPreviewContext(family: .systemSmall))
             }
-        }.background(Color(.secondarySystemBackground))
+        }
     }
 }

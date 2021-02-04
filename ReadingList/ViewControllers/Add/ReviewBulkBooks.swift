@@ -14,8 +14,6 @@ final class ReviewBulkBooks: UITableViewController {
 
         navigationItem.title = "Review \(books.count) \("Book".pluralising(books.count))"
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .done, target: self, action: #selector(save))
-
-        monitorThemeSetting()
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {

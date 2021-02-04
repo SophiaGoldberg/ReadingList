@@ -2,11 +2,22 @@
 import SwiftUI
 import SVProgressHUD
 
-@available(iOS 13.0, *)
 public struct DebugSettings: View {
+
+    // FUTURE: Use some proper SwiftUI stuff for these: ObservableObject, or AppStorage?
     let showSortNumber = Binding(
         get: { Debug.showSortNumber },
         set: { Debug.showSortNumber = $0 }
+    )
+
+    let stayOnBackupRestorationDownloadScreen = Binding(
+        get: { Debug.stayOnBackupRestorationDownloadScreen },
+        set: { Debug.stayOnBackupRestorationDownloadScreen = $0 }
+    )
+
+    let simulateBackupFailed = Binding(
+        get: { Debug.simulateBackupFailure },
+        set: { Debug.simulateBackupFailure = $0 }
     )
 
     private func writeToTempFile(data: [SharedBookData]) -> URL {
@@ -16,7 +27,7 @@ public struct DebugSettings: View {
         return temporaryFilePath
     }
 
-    let onDismiss: () -> Void
+    @Binding var isPresented: Bool
 
     @State private var currentBookDataPresented = false
     @State private var currentBookDataFile: URL?
@@ -51,8 +62,40 @@ public struct DebugSettings: View {
                     Toggle(isOn: showSortNumber) {
                         Text("Show sort number")
                     }
+                    Toggle(isOn: stayOnBackupRestorationDownloadScreen) {
+                        Text("Spoof long backup download")
+                    }
+                }
+
+                Section(header: Text("Backup")) {
+                    Button("Schedule Backup") {
+                        AutoBackupManager.shared.lastBackupCompletion = nil
+                        AutoBackupManager.shared.scheduleBackup()
+                    }
+                    if let lastBackup =
+                        AutoBackupManager.shared.lastBackupCompletion {
+                        HStack {
+                            Text("Last Backup")
+                            Spacer()
+                            Text(lastBackup.formatted(dateStyle: .medium, timeStyle: .short))
+                            if AutoBackupManager.shared.lastAutoBackupFailed {
+                                Text("(Failed)")
+                            }
+                        }
+                    }
+                    if let nextBackupStart =
+                        AutoBackupManager.shared.nextBackupEarliestStartDate {
+                        HStack {
+                            Text("Next Backup")
+                            Spacer()
+                            Text(nextBackupStart.formatted(dateStyle: .medium, timeStyle: .short))
+                        }
+                    }
                 }
                 Section(header: Text("Error Reporting")) {
+                    Toggle(isOn: simulateBackupFailed) {
+                        Text("Simulate Failed Backup")
+                    }
                     Button("Crash") {
                         fatalError("Test Crash")
                     }.foregroundColor(.red)
@@ -70,13 +113,12 @@ public struct DebugSettings: View {
                     }
             }.navigationBarTitle("Debug Settings", displayMode: .inline)
             .navigationBarItems(trailing: Button("Dismiss") {
-                onDismiss()
+                isPresented = false
             })
         }
     }
 }
 
-@available(iOS 13.0, *)
 struct ActivityViewController: UIViewControllerRepresentable {
     var activityItems: [Any]
     var applicationActivities: [UIActivity]?
@@ -88,10 +130,18 @@ struct ActivityViewController: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ActivityViewController>) {}
 }
 
-@available(iOS 13.0, *)
 struct DebugSettings_Previews: PreviewProvider {
     static var previews: some View {
-        DebugSettings { }
+        DebugSettings(isPresented: .constant(true))
+    }
+}
+
+extension Date {
+    func formatted(dateStyle: DateFormatter.Style, timeStyle: DateFormatter.Style) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = dateStyle
+        dateFormatter.timeStyle = timeStyle
+        return dateFormatter.string(from: self)
     }
 }
 #endif

@@ -1,7 +1,7 @@
 import UIKit
 import Foundation
 
-final class LabelPopoverViewController: UIViewController, ThemeableViewController {
+final class LabelPopoverViewController: UIViewController {
     var labelText: NSAttributedString!
 
     private var label: UILabel!
@@ -31,8 +31,6 @@ final class LabelPopoverViewController: UIViewController, ThemeableViewControlle
             // leave bottom anchor constraint off - the point is we want the label to resize in height according to
             // its content, and then we will resize the main view to be the same size as the label.
         ])
-
-        monitorThemeSetting()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -41,11 +39,5 @@ final class LabelPopoverViewController: UIViewController, ThemeableViewControlle
         view.layoutIfNeeded()
         let labelSize = label.intrinsicContentSize
         preferredContentSize = CGSize(width: view.frame.width, height: labelSize.height + 2 * labelPadding)
-    }
-
-    func initialise(withTheme theme: Theme) {
-        popoverPresentationController?.backgroundColor = theme.tableBackgroundColor
-        view.backgroundColor = theme.tableBackgroundColor
-        label.textColor = theme.titleTextColor
     }
 }

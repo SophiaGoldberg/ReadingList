@@ -31,14 +31,10 @@ extension NSManagedObjectContext {
 
     /**
      Tries to save the managed object context and logs an event and raises a fatal error if failure occurs.
+     FUTURE: This function isn't really needed anymore. It used to log an error in UserEngagement, but that wasn't very useful.
      */
     @objc func saveAndLogIfErrored() {
-        do {
-            try self.save()
-        } catch let error as NSError {
-            UserEngagement.logError(error)
-            preconditionFailure(error.localizedDescription)
-        }
+        try! self.save()
     }
 
     @objc private func obtainPermanentIdsForInsertedObjects() {

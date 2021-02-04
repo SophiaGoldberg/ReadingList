@@ -26,8 +26,6 @@ final class AddAuthorForm: FormViewController {
                 $0.placeholder = "Last Name"
                 $0.cell.textField.autocapitalizationType = .words
             }
-
-        monitorThemeSetting()
     }
 
     override func viewDidDisappear(_ animated: Bool) {

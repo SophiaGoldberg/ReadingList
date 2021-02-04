@@ -143,6 +143,7 @@ public extension URL {
         return URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
     }
 
+    /// A temporary file path, with name equal to a newly generated UUID.
     static func temporary() -> URL {
         return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(UUID().uuidString)
     }
@@ -153,6 +154,20 @@ public extension URL {
 
     static var applicationSupport: URL {
         return try! FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+    }
+
+    func isDownloaded() throws -> Bool {
+        var isDownloadedResourceValue: AnyObject?
+        try (self as NSURL).getResourceValue(&isDownloadedResourceValue, forKey: .ubiquitousItemDownloadingStatusKey)
+        guard let isDownloadedResourceString = isDownloadedResourceValue as? String else { return false }
+        return URLUbiquitousItemDownloadingStatus(rawValue: isDownloadedResourceString) == .current
+    }
+
+    func isUploaded() throws -> Bool {
+        var isUploadedResourceValue: AnyObject?
+        try (self as NSURL).getResourceValue(&isUploadedResourceValue, forKey: .ubiquitousItemIsUploadedKey)
+        guard let isUploadedResourceNumber = isUploadedResourceValue as? NSNumber else { return false }
+        return isUploadedResourceNumber.boolValue
     }
 }
 
@@ -181,6 +196,19 @@ public extension FileManager {
             } catch {
                 os_log("Unable to remove temporary file %{public}s: %{public}s", type: .error, url.path, error.localizedDescription)
             }
+        }
+    }
+
+    func createTemporaryDirectory() -> URL {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try! FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: nil)
+        return directory
+    }
+
+    func pathsWithinDirectory(_ directory: URL) throws -> [URL] {
+        let contents = try contentsOfDirectory(atPath: directory.path)
+        return contents.map {
+            URL(fileURLWithPath: $0, relativeTo: directory)
         }
     }
 }

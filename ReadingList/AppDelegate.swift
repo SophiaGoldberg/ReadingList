@@ -6,11 +6,11 @@ import os.log
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-    var launchManager = LaunchManager()
+    lazy var launchManager = LaunchManager(window: window)
     let upgradeManager = UpgradeManager()
 
     /// Will be nil until after the persistent store is initialised.
-    var syncCoordinator: Any?
+    var syncCoordinator: SyncCoordinator?
 
     static var shared: AppDelegate {
         return UIApplication.shared.delegate as! AppDelegate
@@ -21,7 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        launchManager.initialise(window: window!)
+        launchManager.initialise()
         upgradeManager.performNecessaryUpgradeActions()
 
         // Remote notifications are required for iCloud sync.
@@ -30,27 +30,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Grab any options which we will take action on after the persistent store is initialised
         let options = launchManager.extractRelevantLaunchOptions(launchOptions)
         launchManager.initialisePersistentStore {
-            // Set up the user interface
-            let rootViewController = TabBarController()
-            self.window!.rootViewController = rootViewController
-
-            self.launchManager.handleLaunchOptions(options, tabBarController: rootViewController)
-            self.launchManager.initialiseAfterPersistentStoreLoad()
-
-            // Initialise the Sync Coordinator which will maintain iCloud synchronisation
-            if #available(iOS 13.0, *) {
-                self.syncCoordinator = SyncCoordinator(
-                    persistentStoreCoordinator: PersistentStoreManager.container.persistentStoreCoordinator,
-                    orderedTypesToSync: [Book.self, List.self, ListItem.self]
-                )
-                if GeneralSettings.iCloudSyncEnabled {
-                    (self.syncCoordinator as! SyncCoordinator).start()
-                }
-            }
+            self.initialiseSyncCoordinator()
+            self.launchManager.handleLaunchOptions(options)
         }
 
         // If there were any options, they will be handled once the store is initialised
         return !options.any()
+    }
+    
+    private func initialiseSyncCoordinator() {
+        // Initialise the Sync Coordinator which will maintain iCloud synchronisation
+        self.syncCoordinator = SyncCoordinator(
+            persistentStoreCoordinator: PersistentStoreManager.container.persistentStoreCoordinator,
+            orderedTypesToSync: [Book.self, List.self, ListItem.self]
+        )
+        if GeneralSettings.iCloudSyncEnabled {
+            syncCoordinator?.start()
+        }
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {

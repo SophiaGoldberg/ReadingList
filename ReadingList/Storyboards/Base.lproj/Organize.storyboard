@@ -1,20 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="15705" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="wWH-Ym-HSc">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="wWH-Ym-HSc">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15706"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--BookDetails-->
-        <scene sceneID="ajH-QG-QxI">
-            <objects>
-                <viewControllerPlaceholder storyboardName="BookDetails" id="7z6-rj-KqQ" sceneMemberID="viewController"/>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="kNh-RF-V3d" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="-9288" y="2222"/>
-        </scene>
         <!--Organize-->
         <scene sceneID="WvJ-QL-gyx">
             <objects>
@@ -22,7 +14,7 @@
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="50" estimatedSectionHeaderHeight="50" sectionFooterHeight="1" id="yuf-Gn-OLe">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
+                        <color key="backgroundColor" systemColor="groupTableViewBackgroundColor"/>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" reuseIdentifier="ListCell" textLabel="RhS-Gr-Fnz" detailTextLabel="kCO-LL-KNN" style="IBUITableViewCellStyleSubtitle" id="7Oo-C0-bqu">
                                 <rect key="frame" x="0.0" y="55.5" width="375" height="57.5"/>
@@ -32,7 +24,7 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="My Wish List" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" id="RhS-Gr-Fnz">
-                                            <rect key="frame" x="16" y="9" width="97.5" height="20.5"/>
+                                            <rect key="frame" x="16" y="9" width="97" height="20.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
                                             <nil key="textColor"/>
@@ -80,7 +72,7 @@
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" rowHeight="92" estimatedRowHeight="92" sectionHeaderHeight="50" estimatedSectionHeaderHeight="50" sectionFooterHeight="1" estimatedSectionFooterHeight="1" id="gO0-S4-wGF">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
+                        <color key="backgroundColor" systemColor="groupTableViewBackgroundColor"/>
                         <sections/>
                         <connections>
                             <outlet property="dataSource" destination="ggN-hf-l8Q" id="Eni-I7-vfa"/>
@@ -89,17 +81,17 @@
                     </tableView>
                     <navigationItem key="navigationItem" title="List Title" largeTitleDisplayMode="never" id="jSI-Qd-fr4"/>
                     <connections>
-                        <segue destination="7z6-rj-KqQ" kind="showDetail" identifier="showDetail" id="C7a-WA-Ju3"/>
+                        <segue destination="VdA-eI-Qu8" kind="showDetail" identifier="showDetail" id="F4H-WL-B0y"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="EwB-xs-5dO" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-8366" y="1373"/>
+            <point key="canvasLocation" x="-8487" y="1372"/>
         </scene>
-        <!--Themed Navigation Controller-->
+        <!--Navigation Controller-->
         <scene sceneID="u2M-L9-7Kb">
             <objects>
-                <navigationController id="WHn-Om-NYv" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <navigationController id="WHn-Om-NYv" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" largeTitles="YES" id="i2G-m8-7nj">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="96"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -115,24 +107,53 @@
         <!--Organize-->
         <scene sceneID="tj0-M4-c5I">
             <objects>
-                <splitViewController id="wWH-Ym-HSc" customClass="ThemedSplitViewController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <splitViewController id="wWH-Ym-HSc" customClass="SplitViewController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" tag="2" title="Organize" image="organise" selectedImage="organise-filled" id="ofv-YQ-PuH"/>
                     <connections>
                         <segue destination="WHn-Om-NYv" kind="relationship" relationship="masterViewController" id="vSL-Ob-iCW"/>
-                        <segue destination="7z6-rj-KqQ" kind="relationship" relationship="detailViewController" id="xJE-Yc-3El"/>
+                        <segue destination="VdA-eI-Qu8" kind="relationship" relationship="detailViewController" id="mbt-5G-FM2"/>
                     </connections>
                 </splitViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="7JL-re-Mti" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-11076" y="1709"/>
         </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="CmN-7x-fav">
+            <objects>
+                <navigationController id="VdA-eI-Qu8" sceneMemberID="viewController">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="TJR-yE-Sag">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <connections>
+                        <segue destination="cuW-nM-MmA" kind="relationship" relationship="rootViewController" id="WoH-IE-TSl"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Twu-Ud-Tyc" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-10130" y="2171"/>
+        </scene>
+        <!--Book Details Hosting Controller-->
+        <scene sceneID="fOh-B4-4al">
+            <objects>
+                <hostingController id="cuW-nM-MmA" customClass="BookDetailsHostingController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="0xg-aL-vC1"/>
+                </hostingController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="5kC-Hq-ais" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-9366" y="2172"/>
+        </scene>
     </scenes>
+    <inferredMetricsTieBreakers>
+        <segue reference="F4H-WL-B0y"/>
+        <segue reference="QZG-yd-ESl"/>
+    </inferredMetricsTieBreakers>
     <resources>
         <image name="organise" width="25" height="25"/>
         <image name="organise-filled" width="25" height="25"/>
+        <systemColor name="groupTableViewBackgroundColor">
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
     </resources>
-    <inferredMetricsTieBreakers>
-        <segue reference="QZG-yd-ESl"/>
-        <segue reference="C7a-WA-Ju3"/>
-    </inferredMetricsTieBreakers>
 </document>

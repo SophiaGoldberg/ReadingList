@@ -4,7 +4,7 @@ import WhatsNewKit
 import ReadingList_Foundation
 
 struct FirstOpenScreenProvider {
-    func build() -> UIViewController {
+    func build(onDismiss: (() -> Void)? = nil) -> UIViewController {
         let readingList = "Reading List"
         let title = "Welcome to \(readingList)"
         let whatsNew = WhatsNew(title: title, items: [
@@ -29,19 +29,14 @@ struct FirstOpenScreenProvider {
                 image: UIImage(largeSystemImageNamed: "tray.full")
             ),
             WhatsNew.Item(
-                title: "Free & Open Source",
-                subtitle: "No ads, subscriptions or limits, and fully private.",
-                image: UIImage(largeSystemImageNamed: "lock.open")
+                title: "Privacy Focused",
+                subtitle: "All data is kept fully private",
+                image: UIImage(largeSystemImageNamed: "lock.fill")
             )
         ])
 
         var config = WhatsNewViewController.Configuration()
         config.itemsView.imageSize = .fixed(height: 40)
-        if #available(iOS 13.0, *) { } else {
-            if GeneralSettings.theme.isDark {
-                config.apply(theme: .darkBlue)
-            }
-        }
         if let startIndex = title.startIndex(ofFirstSubstring: readingList) {
             config.titleView.secondaryColor = .init(startIndex: startIndex, length: readingList.count, color: .systemBlue)
         } else {
@@ -50,6 +45,12 @@ struct FirstOpenScreenProvider {
         config.detailButton = WhatsNewViewController.DetailButton(
             title: "Learn more",
             action: .website(url: "https://readinglist.app/about")
+        )
+        config.completionButton = WhatsNewViewController.CompletionButton(
+            title: "Continue",
+            action: .custom { controller in
+                controller.dismiss(animated: true, completion: onDismiss)
+            }
         )
 
         return WhatsNewViewController(whatsNew: whatsNew, configuration: config)

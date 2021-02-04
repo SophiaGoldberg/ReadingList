@@ -130,7 +130,6 @@ public extension NSEntityMigrationPolicy {
     }
 }
 
-@available(iOS 13.0, *)
 public extension NSFetchedResultsController {
     /**
      Generates a `NSDiffableDataSourceSnapshot` where the section identifiers are the fetched section names, and the item identifiers are the fetched object's `NSManagedObjectID`.
@@ -140,7 +139,6 @@ public extension NSFetchedResultsController {
     }
 }
 
-@available(iOS 13.0, *)
 public extension NSDiffableDataSourceSnapshot {
     mutating func loadSectionChanges(_ change: CollectionDifference<SectionIdentifierType>.Change) {
         switch change {
@@ -197,7 +195,6 @@ public extension NSDiffableDataSourceSnapshot {
     }
 }
 
-@available(iOS 13.0, *)
 public extension NSDiffableDataSourceSnapshot where ItemIdentifierType == NSManagedObjectID {
     /**
     Constructs a `NSDiffableDataSourceSnapshot` where the section identifiers are the fetched section names with the provided mapping function applied, and the
@@ -218,7 +215,6 @@ public extension NSDiffableDataSourceSnapshot where ItemIdentifierType == NSMana
     }
 }
 
-@available(iOS 13.0, *)
 public extension NSDiffableDataSourceSnapshot where SectionIdentifierType == String, ItemIdentifierType == NSManagedObjectID {
     /**
     Constructs a `NSDiffableDataSourceSnapshot` where the section identifiers are the fetched section names, and the item identifiers are the fetched object's `NSManagedObjectID`.

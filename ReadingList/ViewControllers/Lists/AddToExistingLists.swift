@@ -27,7 +27,6 @@ final class AddToExistingLists: UITableViewController {
         resultsController.delegate = tableView
         try! resultsController.performFetch()
 
-        monitorThemeSetting()
         setEditing(true, animated: false)
     }
 
@@ -41,10 +40,6 @@ final class AddToExistingLists: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ExistingListCell", for: indexPath)
-        if #available(iOS 13.0, *) { } else {
-            cell.defaultInitialise(withTheme: GeneralSettings.theme)
-        }
-
         let list = resultsController.object(at: IndexPath(row: indexPath.row, section: 0))
         cell.textLabel!.text = list.name
         cell.detailTextLabel!.text = "\(list.items.count) book\(list.items.count == 1 ? "" : "s")"

@@ -57,7 +57,6 @@ struct BookGrid: View {
         }
         .padding(.top, 12)
         .padding(.bottom, 4)
-        .background(Color(.secondarySystemBackground))
     }
 }
 

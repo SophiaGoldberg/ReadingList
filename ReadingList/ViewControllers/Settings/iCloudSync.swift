@@ -13,7 +13,6 @@ class CloudSync: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        monitorThemeSetting()
         enabledSwitch.isOn = GeneralSettings.iCloudSyncEnabled
         if !GeneralSettings.iCloudSyncEnabled/* && syncCoordinator?.reachability.connection == .unavailable */{
             //enabledSwitch.isEnabled = false
@@ -25,19 +24,6 @@ class CloudSync: UITableViewController {
 //        guard !GeneralSettings.iCloudSyncEnabled else { return }
 //        enabledSwitch.isEnabled = syncCoordinator?.reachability.connection != .unavailable
 //    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = super.tableView(tableView, cellForRowAt: indexPath)
-        if #available(iOS 13.0, *) { } else {
-            let theme = GeneralSettings.theme
-            cell.defaultInitialise(withTheme: theme)
-            cell.contentView.subviews.forEach {
-                guard let label = $0 as? UILabel else { return }
-                label.textColor = theme.titleTextColor
-            }
-        }
-        return cell
-    }
 
     @IBAction private func iCloudSyncSwitchChanged(_ sender: UISwitch) {
         if sender.isOn {

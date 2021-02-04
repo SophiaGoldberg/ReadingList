@@ -43,13 +43,6 @@ final class SearchOnline: UITableViewController {
         selectModeButton.onToggle = { _ in
             self.changeSelectMode()
         }
-
-        monitorThemeSetting()
-    }
-
-    override func initialise(withTheme theme: Theme) {
-        super.initialise(withTheme: theme)
-        emptyDatasetView.initialise(fromTheme: theme)
     }
 
     override func viewDidAppear(_ animated: Bool) {

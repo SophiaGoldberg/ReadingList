@@ -6,7 +6,7 @@ class PersistentStoreManager {
 
     private(set) static var container: NSPersistentContainer!
 
-    private static let storeName = "books"
+    static let storeName = "books"
     static var storeFileName: String { return "\(storeName).sqlite" }
     static var storeLocation: URL { return URL.applicationSupport.appendingPathComponent(storeFileName) }
 
@@ -77,14 +77,5 @@ class PersistentStoreManager {
         if deletedObjectIds.isEmpty { return }
         NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSDeletedObjectsKey: deletedObjectIds],
                                             into: [PersistentStoreManager.container.viewContext])
-    }
-
-    /**
-     Deletes all data from the persistent store.
-    */
-    static func deleteAll() {
-        delete(type: List.self)
-        delete(type: Subject.self)
-        delete(type: Book.self)
     }
 }

@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "ReadingList_Foundation",
-    platforms: [.iOS(.v12)],
+    platforms: [.iOS(.v13)],
     products: [
         .library(
             name: "ReadingList_Foundation",

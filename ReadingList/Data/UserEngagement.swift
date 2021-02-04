@@ -66,6 +66,14 @@ class UserEngagement {
         case csvExport = "CSV_Export"
         case deleteAllData = "Delete_All_Data"
 
+        // Backup
+        case createBackup = "Create_Backup"
+        case autoBackup = "Auto_Backup"
+        case disableAutoBackup = "Disable_Auto_Backup"
+        case changeAutoBackupFrequency = "Change_Backup_Frequency"
+        case restoreFromBackup = "Restore_From_Backup"
+        case restoreFromBackupOnFirstLaunch = "First_Launch_Restore_From_Backup"
+
         // Navigation
         case searchLibrary = "Search_Library"
         case searchLibrarySwitchScope = "Search_Library_Switch_Scope"

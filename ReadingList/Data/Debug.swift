@@ -9,12 +9,18 @@ class Debug {
     @Persisted("showSortNumber", defaultValue: false)
     static var showSortNumber: Bool
 
+    @Persisted("backupRestoreStayDownloading", defaultValue: false)
+    static var stayOnBackupRestorationDownloadScreen: Bool
+
+    @Persisted("simulateBackupFailure", defaultValue: false)
+    static var simulateBackupFailure: Bool
+
     private static let screenshotsCommand = "--UITests_Screenshots"
 
     static func initialiseSettings() {
         if CommandLine.arguments.contains("--reset") {
             UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
-            NSPersistentStoreCoordinator().destroyAndDeleteStore(at: URL.applicationSupport.appendingPathComponent(PersistentStoreManager.storeFileName))
+            NSPersistentStoreCoordinator().destroyAndDeleteStore(at: PersistentStoreManager.storeLocation)
         }
     }
 

@@ -14,9 +14,6 @@ extension UITableViewCell {
     func configure(from list: List) {
         textLabel!.text = list.name
         detailTextLabel!.text = "\(list.items.count) book\(list.items.count == 1 ? "" : "s")"
-        if #available(iOS 13.0, *) { } else {
-            defaultInitialise(withTheme: GeneralSettings.theme)
-        }
     }
 }
 
@@ -37,12 +34,7 @@ final class Organize: UITableViewController {
         searchController.delegate = self
         navigationItem.searchController = searchController
 
-        if #available(iOS 13.0, *) {
-            dataSource = OrganizeTableViewDataSource(tableView: tableView, resultsController: buildResultsController())
-        } else {
-            dataSource = OrganizeTableViewDataSourceLegacy(tableView, resultsController: buildResultsController())
-        }
-
+        dataSource = OrganizeTableViewDataSource(tableView: tableView, resultsController: buildResultsController())
         emptyDataSetManager = OrganizeEmptyDataSetManager(tableView: tableView, navigationBar: navigationController?.navigationBar, navigationItem: navigationItem, searchController: searchController) { [weak self] _ in
             self?.configureNavigationBarButtons()
         }
@@ -52,8 +44,6 @@ final class Organize: UITableViewController {
         try! dataSource.resultsController.performFetch()
         dataSource.updateData(animate: false)
         configureNavigationBarButtons()
-
-        monitorThemeSetting()
     }
 
     private func configureNavigationBarButtons() {
@@ -121,7 +111,7 @@ final class Organize: UITableViewController {
 
     private func renameList(_ list: List, completion: ((Bool) -> Void)? = nil) {
         let existingListNames = List.names(fromContext: PersistentStoreManager.container.viewContext)
-        let renameListAlert = TextBoxAlert(title: "Rename List", message: "Choose a new name for this list", initialValue: list.name, placeholder: "New list name", keyboardAppearance: GeneralSettings.theme.keyboardAppearance, textValidator: { listName in
+        let renameListAlert = TextBoxAlert(title: "Rename List", message: "Choose a new name for this list", initialValue: list.name, placeholder: "New list name", textValidator: { listName in
                 guard let listName = listName, !listName.isEmptyOrWhitespace else { return false }
                 return listName == list.name || !existingListNames.contains(listName)
             }, onCancel: {
@@ -193,12 +183,6 @@ final class Organize: UITableViewController {
             } else { preconditionFailure() }
 
             listBookTable.list = list
-
-            // If the search bar is visible on this view, then it should be visible on the presented view too to
-            // prevent an animation issue from occuring (https://stackoverflow.com/a/55043782/5513562) on iOS <13.
-            if #available(iOS 13.0, *) { /* issue is fixed */ } else {
-                listBookTable.showSearchBarOnAppearance = !searchController.isActive && searchController.searchBar.frame.height > 0 && !list.items.isEmpty
-            }
         }
     }
 
@@ -207,7 +191,6 @@ final class Organize: UITableViewController {
         return !tableView.isEditing
     }
 
-    @available(iOS 13.0, *)
     override func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         // the PreviewProvider doesn't seem to work when instantiating the ListBookTable - all the cells become really
         // big, and that persists when you open from the preview.
@@ -224,7 +207,6 @@ final class Organize: UITableViewController {
         }
     }
 
-    @available(iOS 13.0, *)
     override func tableView(_ tableView: UITableView, willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration, animator: UIContextMenuInteractionCommitAnimating) {
         guard let indexPath = configuration.identifier as? IndexPath else { return }
         animator.addAnimations {
@@ -236,7 +218,7 @@ final class Organize: UITableViewController {
 extension Organize: HeaderConfigurable {
     func configureHeader(_ header: UITableViewHeaderFooterView, at index: Int) {
         guard let header = header as? BookTableHeader else { preconditionFailure() }
-        header.configure(labelText: "YOUR LISTS", enableSort: !isEditing && !searchController.isActive)
+        header.configure(labelText: "Your Lists", badgeNumber: nil, enableSort: !isEditing && !searchController.isActive)
     }
 }
 

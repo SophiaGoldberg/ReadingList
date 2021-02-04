@@ -47,9 +47,11 @@ disabled_rules:
   - line_length
   - file_length
   - function_body_length
+  - type_body_length
 
-  # This is a bit of an opinionated rule...  
+  # These are a bit opinionated...  
   - nesting 
+  - multiple_closures_with_trailing_closure
 
   # Implicit returns are not always better
   - implicit_return

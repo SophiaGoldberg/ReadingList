@@ -152,6 +152,14 @@ public extension UISplitViewController {
         // The controller is not present
         return nil
     }
+
+    func popDetailOrMasterToRoot(animated: Bool) {
+        if let detailNav = detailNavigationController {
+            detailNav.popToRootViewController(animated: animated)
+        } else {
+            masterNavigationController.popToRootViewController(animated: animated)
+        }
+    }
 }
 
 public extension UINavigationController {
@@ -272,6 +280,13 @@ public extension UIFont {
         let fontSize = UIFont.preferredFont(forTextStyle: textStyle).pointSize
         return self.withSize(fontSize)
     }
+
+    class func rounded(ofSize size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let systemFont = UIFont.systemFont(ofSize: size, weight: weight)
+
+        guard let descriptor = systemFont.fontDescriptor.withDesign(.rounded) else { return systemFont }
+        return UIFont(descriptor: descriptor, size: size)
+    }
 }
 
 public extension UIImage {
@@ -284,15 +299,10 @@ public extension UIImage {
     }
 
     /**
-     If running iOS 13 or higher, returns the UIImage with the provided system name, at large scale and the provided weight. If iOS 12 or lower, or
-     the image name provided does not correspond to a system image, returns nil.
+     Returns the UIImage with the provided system name, at large scale and the provided weight.
      */
     convenience init?(largeSystemImageNamed name: String) {
-        if #available(iOS 13.0, *) {
-            self.init(systemName: name, withConfiguration: UIImage.SymbolConfiguration(scale: .large))
-        } else {
-            return nil
-        }
+        self.init(systemName: name, withConfiguration: UIImage.SymbolConfiguration(scale: .large))
     }
 }
 

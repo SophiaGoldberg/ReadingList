@@ -41,8 +41,6 @@ final class EditBookSubjectsForm: FormViewController {
                 }
             }
         }
-
-        monitorThemeSetting()
     }
 
     override func viewWillDisappear(_ animated: Bool) {

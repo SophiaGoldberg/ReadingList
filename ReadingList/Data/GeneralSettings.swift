@@ -22,7 +22,9 @@ struct GeneralSettings {
     @Persisted("iCloudSyncEnabled", defaultValue: false)
     static var iCloudSyncEnabled: Bool
 
-    @available(iOS, obsoleted: 13.0)
-    @Persisted("theme", defaultValue: .normal)
-    static var theme: Theme
+    @Persisted("showAmazonLinks", defaultValue: true)
+    static var showAmazonLinks: Bool
+
+    @Persisted("darkModeOverride")
+    static var darkModeOverride: Bool?
 }

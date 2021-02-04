@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="15505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="qYh-NF-gdy">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="qYh-NF-gdy">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15509"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Themed Navigation Controller-->
+        <!--Navigation Controller-->
         <scene sceneID="lTw-9q-5OW">
             <objects>
-                <navigationController id="BJH-LT-6o4" customClass="ThemedNavigationController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <navigationController id="BJH-LT-6o4" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" largeTitles="YES" id="7ZT-Qa-UWK">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="96"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -23,6 +23,32 @@
             </objects>
             <point key="canvasLocation" x="-7831" y="-460"/>
         </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="QMt-8A-aNz">
+            <objects>
+                <navigationController id="vGI-O0-Cf0" sceneMemberID="viewController">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="tio-iZ-zeR">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <connections>
+                        <segue destination="9O7-Ah-GZs" kind="relationship" relationship="rootViewController" id="HmE-bN-6fO"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="hh3-KN-5d7" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-7770" y="440"/>
+        </scene>
+        <!--Book Details Hosting Controller-->
+        <scene sceneID="jKA-Vc-cN7">
+            <objects>
+                <hostingController id="9O7-Ah-GZs" customClass="BookDetailsHostingController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="5gx-JL-eUF"/>
+                </hostingController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="FCg-p8-YSF" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-7004" y="441"/>
+        </scene>
         <!--Read State Header-->
         <scene sceneID="TqS-ZX-Pkx">
             <objects>
@@ -30,7 +56,7 @@
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" allowsSelectionDuringEditing="YES" allowsMultipleSelectionDuringEditing="YES" rowHeight="92" sectionHeaderHeight="60" estimatedSectionHeaderHeight="60" sectionFooterHeight="1" id="KXn-Og-bAI">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
+                        <color key="backgroundColor" systemColor="groupTableViewBackgroundColor"/>
                         <connections>
                             <outlet property="dataSource" destination="4HX-WC-tQz" id="E8k-dW-boW"/>
                             <outlet property="delegate" destination="4HX-WC-tQz" id="xSO-ff-FJD"/>
@@ -38,39 +64,34 @@
                     </tableView>
                     <navigationItem key="navigationItem" title="Read State Header" largeTitleDisplayMode="never" id="L1D-Rs-V49"/>
                     <connections>
-                        <segue destination="myb-KF-3dK" kind="showDetail" identifier="showDetail" id="bOj-r5-ku9"/>
+                        <segue destination="vGI-O0-Cf0" kind="showDetail" identifier="showDetail" id="7SI-zA-rSy"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="x3g-rQ-Wjw" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-7046" y="-461"/>
         </scene>
-        <!--Themed Split View Controller-->
+        <!--Split View Controller-->
         <scene sceneID="nq6-fH-kF6">
             <objects>
-                <splitViewController id="qYh-NF-gdy" customClass="ThemedSplitViewController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
+                <splitViewController id="qYh-NF-gdy" customClass="SplitViewController" customModule="ReadingList" customModuleProvider="target" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="" id="SkP-Ti-gmE"/>
                     <connections>
                         <segue destination="BJH-LT-6o4" kind="relationship" relationship="masterViewController" id="4g6-O6-K7z"/>
-                        <segue destination="myb-KF-3dK" kind="relationship" relationship="detailViewController" id="Uat-sc-yvW"/>
+                        <segue destination="vGI-O0-Cf0" kind="relationship" relationship="detailViewController" id="Bqo-SU-1yL"/>
                     </connections>
                 </splitViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="rUu-6c-OoI" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-8675" y="-461"/>
         </scene>
-        <!--BookDetails-->
-        <scene sceneID="Nwv-F8-0xK">
-            <objects>
-                <viewControllerPlaceholder storyboardName="BookDetails" id="myb-KF-3dK" sceneMemberID="viewController">
-                    <navigationItem key="navigationItem" id="O6Q-yp-rGK"/>
-                </viewControllerPlaceholder>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="U2e-HY-cXj" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="-7866" y="191"/>
-        </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="Uat-sc-yvW"/>
+        <segue reference="7SI-zA-rSy"/>
     </inferredMetricsTieBreakers>
+    <resources>
+        <systemColor name="groupTableViewBackgroundColor">
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+    </resources>
 </document>

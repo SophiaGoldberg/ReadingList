@@ -1,16 +1,6 @@
 import Foundation
 import UIKit
 
-extension UIImage {
-    convenience init?(ifAvailable systemName: String) {
-        if #available(iOS 13.0, *) {
-            self.init(systemName: systemName)
-        } else {
-            return nil
-        }
-    }
-}
-
 enum ImageNames {
     static let startBookPlay = "play"
     static let finishBookCheckmark = "checkmark"

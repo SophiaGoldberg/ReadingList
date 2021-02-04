@@ -9,7 +9,11 @@ import PersistedPropertyWrapper
 
 class LaunchManager {
 
-    var window: UIWindow!
+    init(window: UIWindow?) {
+        self.window = window
+    }
+
+    let window: UIWindow?
     var storeMigrationFailed = false
     var isFirstLaunch = false
 
@@ -17,9 +21,7 @@ class LaunchManager {
      Performs any required initialisation immediately post after the app has launched.
      This must be called prior to any other initialisation actions.
     */
-    func initialise(window: UIWindow) {
-        self.window = window
-
+    func initialise() {
         isFirstLaunch = AppLaunchHistory.appOpenedCount == 0
         #if DEBUG
         Debug.initialiseSettings()
@@ -27,6 +29,11 @@ class LaunchManager {
         UserEngagement.initialiseUserAnalytics()
         SVProgressHUD.setDefaults()
         SwiftyStoreKit.completeTransactions()
+        BackupInfoMonitor.shared.start()
+        if #available(iOS 13.0, *) {
+            AutoBackupManager.shared.registerBackgroundTasks()
+            AutoBackupManager.shared.scheduleBackup()
+        }
     }
 
     func handleApplicationDidBecomeActive() {
@@ -35,6 +42,10 @@ class LaunchManager {
         if storeMigrationFailed {
             presentIncompatibleDataAlert()
         }
+    }
+
+    enum LegacyBackupError: Int, Error {
+        case timeoutExpired = 0
     }
 
     func extractRelevantLaunchOptions(_ launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> LaunchOptions {
@@ -52,15 +63,19 @@ class LaunchManager {
      Initialises the persistent store on a background thread. If successfully completed, the callback will be run
      on the main thread. If the persistent store fails to initialise, then an error alert is presented to the user.
      */
-    func initialisePersistentStore(_ onSuccess: (() -> Void)? = nil) {
+    func initialisePersistentStore(_ onSuccess: @escaping () -> Void) {
         DispatchQueue.global(qos: .userInteractive).async {
             do {
                 try PersistentStoreManager.initalisePersistentStore {
                     os_log("Persistent store loaded", type: .info)
                     DispatchQueue.main.async {
-                        AppLaunchHistory.lastLaunchedBuildInfo = BuildInfo.thisBuild
-                        onSuccess?()
+                        self.initialiseAfterPersistentStoreLoad()
+                        onSuccess()
                     }
+
+                    // Notify any other parts of the app which may be waiting on an initialised persistent container (specifically,
+                    // background backup tasks).
+                    NotificationCenter.default.post(name: .didCompletePersistentStoreInitialisation, object: nil)
                 }
             } catch MigrationError.incompatibleStore {
                 DispatchQueue.main.async {
@@ -74,7 +89,13 @@ class LaunchManager {
         }
     }
 
-    func handleLaunchOptions(_ options: LaunchOptions, tabBarController: TabBarController) {
+    func handleLaunchOptions(_ options: LaunchOptions) {
+        guard let window = window else { return }
+        guard let tabBarController = window.rootViewController as? TabBarController else {
+            assertionFailure()
+            return
+        }
+
         if let quickAction = options.quickAction {
             quickAction.perform(from: tabBarController)
         } else if let launchUrl = options.url {
@@ -86,6 +107,7 @@ class LaunchManager {
      Returns whether the provided URL could be handled.
     */
     @discardableResult func handleOpenUrl(_ url: URL) -> Bool {
+        guard let window = window else { return false }
         if url.isFileURL && url.pathExtension == "csv" {
             return openCsvFileInApp(url: url)
         } else if url.scheme == ProprietaryURLManager.scheme {
@@ -104,54 +126,17 @@ class LaunchManager {
     private func openCsvFileInApp(url: URL) -> Bool {
         os_log("Opening CSV file URL: %{public}s", type: .default, url.absoluteString)
 
-        guard let tabBarController = window.rootViewController as? TabBarController else {
-            assertionFailure()
-            return false
+        guard let tabBarController = window?.rootViewController as? TabBarController else {
+            fatalError("Missing root tab bar controller")
         }
         UserEngagement.logEvent(.openCsvInApp)
-
-        // First select the correct tab (Settings)
-        tabBarController.selectedTab = .settings
-        let settingsSplitVC = tabBarController.selectedSplitViewController!
-
-        // Dismiss any existing navigation stack (implementation depends on whether the views are split or not)
-        if let detailNav = settingsSplitVC.detailNavigationController {
-            detailNav.popToRootViewController(animated: false)
-        } else {
-            settingsSplitVC.masterNavigationController.popToRootViewController(animated: false)
-        }
-
-        // Select the Import Export row to ensure it is highlighted
-        guard let settingsVC = settingsSplitVC.masterNavigationController.viewControllers.first as? Settings else {
-            assertionFailure()
-            return false
-        }
-        settingsVC.tableView.selectRow(at: Settings.importExportIndexPath, animated: false, scrollPosition: .none)
-
-        // Instantiate the destination view controller
-        guard let importVC = UIStoryboard.ImportExport.instantiateViewController(withIdentifier: "Import") as? Import else {
-            assertionFailure()
-            return false
-        }
-        importVC.preProvidedImportFile = url
-
-        // Instantiate the stack of view controllers leading up to the Import view controller
-        guard let navigation = UIStoryboard.ImportExport.instantiateViewController(withIdentifier: "Navigation") as? UINavigationController else {
-            preconditionFailure()
-        }
-        navigation.setViewControllers([
-            UIStoryboard.ImportExport.instantiateViewController(withIdentifier: "ImportExport"),
-            importVC
-        ], animated: false)
-
-        // Put them on the screen
-        settingsSplitVC.showDetailViewController(navigation, sender: self)
+        tabBarController.presentImportExportView(importUrl: url)
         return true
     }
 
     func handleQuickAction(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
         guard let quickAction = QuickAction(rawValue: shortcutItem.type) else { return false }
-        guard let tabBarController = window.rootViewController as? TabBarController else { return false }
+        guard let tabBarController = window?.rootViewController as? TabBarController else { return false }
         quickAction.perform(from: tabBarController)
         return true
     }
@@ -168,23 +153,13 @@ class LaunchManager {
         #if DEBUG
         Debug.initialiseData()
         #endif
-        window.rootViewController = TabBarController()
 
-        // Initialise app-level theme, and monitor the set theme, if < iOS 13
-        if #available(iOS 13.0, *) { } else {
-            initialiseTheme()
-            NotificationCenter.default.addObserver(self, selector: #selector(self.initialiseTheme), name: .ThemeSettingChanged, object: nil)
-        }
+        guard let window = window else { return }
+        let rootViewController = TabBarController()
+        window.rootViewController = rootViewController
 
-        if presentFirstLaunchOrChangeLog {
-            if isFirstLaunch {
-                let firstOpenScreen = FirstOpenScreenProvider().build()
-                window.rootViewController!.present(firstOpenScreen, animated: true)
-            } else if let lastLaunchedVersion = AppLaunchHistory.lastLaunchedBuildInfo?.version {
-                if let changeList = ChangeListProvider().changeListController(after: lastLaunchedVersion) {
-                    window.rootViewController!.present(changeList, animated: true)
-                }
-            }
+        if let darkModeOverride = GeneralSettings.darkModeOverride {
+            window.overrideUserInterfaceStyle = darkModeOverride ? .dark : .light
         }
 
         if #available(iOS 14.0, *) {
@@ -196,26 +171,29 @@ class LaunchManager {
             }
         }
 
+        if presentFirstLaunchOrChangeLog {
+            if isFirstLaunch {
+                let firstOpenScreen = FirstOpenScreenProvider().build {
+                    FirstLaunchRestorationManager.shared.presentRestorePromptIfSuitableBackupFound()
+                }
+                rootViewController.present(firstOpenScreen, animated: true)
+            } else if let lastLaunchedVersion = AppLaunchHistory.lastLaunchedBuildInfo?.version {
+                if let changeList = ChangeListProvider().changeListController(after: lastLaunchedVersion) {
+                    rootViewController.present(changeList, animated: true)
+                }
+            }
+        }
+
         AppLaunchHistory.lastLaunchedBuildInfo = BuildInfo.thisBuild
     }
 
-    @available(iOS, obsoleted: 13.0)
-    @objc private func initialiseTheme() {
-        if #available(iOS 13.0, *) { return }
-        let theme = GeneralSettings.theme
-        theme.configureForms()
-        window.tintColor = theme.tint
-    }
-
     private func presentIncompatibleDataAlert() {
+        guard let window = window else { fatalError("No window present when attempting to present an incompatible data alert") }
+
         #if RELEASE
         // This is a common error during development, but shouldn't occur in production
         guard AppLaunchHistory.lastLaunchedBuildInfo?.version != BuildInfo.thisBuild.version else {
-            UserEngagement.logError(
-                NSError(code: .invalidMigration,
-                        userInfo: ["mostRecentWorkingVersion": AppLaunchHistory.lastLaunchedBuildInfo?.fullDescription ?? "unknown"])
-            )
-            preconditionFailure("Migration error thrown for store of same version.")
+            fatalError("Migration error thrown for store of same version. Most recent working version: \(AppLaunchHistory.lastLaunchedBuildInfo?.fullDescription ?? "unknown")")
         }
         #endif
 
@@ -229,7 +207,6 @@ class LaunchManager {
             \(mostRecentWorkingVersion) again to be able to access your data.
             """
         } else {
-            UserEngagement.logError(NSError(code: .noPreviousStoreVersionRecorded))
             compatibilityVersionMessage = nil
             assertionFailure("No recorded previously working version")
         }
@@ -244,7 +221,9 @@ class LaunchManager {
             // More accurately model a reinstall by clearing UserDefaults too
             UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
             UserDefaults.standard.synchronize()
-            self.initialisePersistentStore()
+            self.initialisePersistentStore {
+                self.initialiseAfterPersistentStoreLoad()
+            }
             self.storeMigrationFailed = false
         })
         #endif
@@ -252,6 +231,10 @@ class LaunchManager {
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         window.rootViewController!.present(alert, animated: true)
     }
+}
+
+extension Notification.Name {
+    static let didCompletePersistentStoreInitialisation = Notification.Name("didCompletePersistentStoreInitialisation")
 }
 
 struct LaunchOptions {
